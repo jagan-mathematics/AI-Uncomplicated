@@ -1,0 +1,17 @@
+omegaconf
+msgspec
+rouge-score
+sacrebleu
+sentencepiece
+tiktoken
+fsspec
+blobfile
+wandb
+viztracer
+lm-eval
+scipy
+pynvml
+transformers
+torch>2.0.0
+matplotlib==3.9.2
+seaborn==0.13.2
