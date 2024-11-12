@@ -14,6 +14,9 @@ class BaseConfiguration(object):
     num_heads: int = 8
     attention_dropout = 0.0
     head_dim = None
+    use_rope = True
+    rope_base = 10000
+    
 
 
     def __post_init__(self):
