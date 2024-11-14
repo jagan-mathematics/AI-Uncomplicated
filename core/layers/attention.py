@@ -1,10 +1,12 @@
 from core.configurations.base import BaseConfiguration
-from core.layers.rope_positional_embedding import RopePositionEmbedding
-from core.layers.rope_positional_embedding import apply_positional_embedding
+from core.layers.positional_embedding.rope_projector import RopePositionEmbedding
+from core.layers.positional_embedding.rope_projector import apply_positional_embedding
 from torch import nn
 import torch
 
 import math
+
+from core.utils.masks import _update_causal_mask
 
 
 class RopeAttention(nn.Module):
@@ -19,6 +21,7 @@ class RopeAttention(nn.Module):
         
         self.attention_dropout = config.attention_dropout
         self.head_dim = config.head_dim
+        self.hidden_dim = config.hidden_dim
         self.num_heads = config.num_heads
         self.scaling = 1 / math.sqrt(config.head_dim)
         
@@ -32,38 +35,39 @@ class RopeAttention(nn.Module):
             )
         
         self.query_projecton = nn.Linear(in_features=config.hidden_dim, 
-                                    out_features=config.head_dim,
+                                    out_features=config.hidden_dim,
                                     bias=False)
         self.key_projecton = nn.Linear(in_features=config.hidden_dim, 
-                                    out_features=config.head_dim,
+                                    out_features=config.hidden_dim,
                                     bias=False)
         self.value_projecton = nn.Linear(in_features=config.hidden_dim, 
-                                    out_features=config.head_dim,
+                                    out_features=config.hidden_dim,
                                     bias=False)
         
         self.output_projecton = nn.Linear(in_features=config.hidden_dim, 
-                                    out_features=config.head_dim,
+                                    out_features=config.hidden_dim,
                                     bias=False)
 
         
 
     def forward(self, input_tensor, attention_mask, output_attentions=False):
-        b_size, seq_len, _ = input_tensor.shape
+        print(f"input tensor shape in attention forward is {input_tensor.shape}")
+        b_size, seq_len, _ = input_tensor.shape # [4, 10, 512] [B * S * D]
         
-        query_state = self.query_projecton(input_tensor)
-        key_state = self.key_projecton(input_tensor)
-        value_state = self.value_projecton(input_tensor)
-        
-        query_state = query_state.view(b_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
-        key_state = key_state.view(b_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
-        value_state = value_state.view(b_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+        query_state = self.query_projecton(input_tensor) # [B * S * D]
+        key_state = self.key_projecton(input_tensor) # [B * S * D]
+        value_state = self.value_projecton(input_tensor) # [B * S * D]
+
+        query_state = query_state.view(b_size, seq_len, self.num_heads,  self.head_dim).transpose(1, 2) # [B * H * S * D]
+        key_state = key_state.view(b_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2) # [B * H * S * D]
+        value_state = value_state.view(b_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2) # [B * H * S * D]
         
         if self.use_rope:
-            cos, sin = self.rope_position_projection(query_state)
+            cos, sin = self.rope_position_projection(query_state) # B x S x D
             query_state, value_state = apply_positional_embedding(query_state, value_state, cos, sin)
         
         attn_weights = torch.matmul(query_state, key_state.transpose(2, 3)) * self.scaling
-        
+
         if attention_mask is not None:
             attention_mask = attention_mask[:, :, :, :key_state.shape[-2]]  # B x H x Q_s x K_s
             attn_weights = attn_weights * attention_mask
@@ -82,7 +86,7 @@ class RopeAttention(nn.Module):
         attn_output = attn_output.transpose(1, 2).contiguous()
 
         attn_output = attn_output.view(b_size, seq_len, -1)
-        attn_output = self.o_proj(attn_output)
+        attn_output = self.output_projecton(attn_output)
 
         if not output_attentions:
             attn_weights = None

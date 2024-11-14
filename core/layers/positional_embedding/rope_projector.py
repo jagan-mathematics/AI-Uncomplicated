@@ -13,10 +13,9 @@ def rotate_half(x):
 
 def apply_positional_embedding(q, k, cos, sin):
     if len(cos.shape) == 3 and len(q.shape) == 4:
-        cos = cos.unsqueeze(1)
-        sin = sin.unsqueeze(1)
-    
-    q = (q * cos) + (rotate_half(q) * sin)
+        cos = cos.unsqueeze(1) # B x 1 x S x D
+        sin = sin.unsqueeze(1) # B X 1 X S X D
+    q = (q * cos) + (rotate_half(q) * sin) # (B x H x S x D ) * B x 1 x S  D
     k = (k * cos) + (rotate_half(k) * sin)
     return q, k
 
@@ -39,20 +38,21 @@ class RopePositionEmbedding(nn.Module):
     
     @torch.no_grad()
     def forward(self, x):
-        batch_size, sequence_length, dim = x.shape
-        assert self.hidden_dim == dim
+
+
+        batch_size, _, sequence_length, dim = x.shape  # B x H x S x D
+        assert self.hidden_dim == dim # 64
         device_type = x.device
         
         if self.rotatory_matrix.device != device_type:
             self.rotatory_matrix.device.to(device_type)
         
-        freqs = self.rotatory_matrix[:sequence_length, :]
-        freqs = freqs[None, :, :].expand(batch_size, -1, -1)
+        freqs = self.rotatory_matrix[:sequence_length, :] # S x D / 2
+        freqs = freqs[None, :, :].expand(batch_size, -1, -1) # 1 x S x D/ 2 -> B x s x D/ 2
         
         with torch.autocast(device_type=device_type.type, enabled=False):
             emb = torch.cat((freqs, freqs), dim=-1)
 
-            cos = emb.cos()
-            sin = emb.sin()
-        return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
-        
+            cos = emb.cos() # B x S x D
+            sin = emb.sin() # B x S x D
+        return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype) # B x S x D

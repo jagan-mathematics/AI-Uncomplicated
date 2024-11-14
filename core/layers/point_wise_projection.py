@@ -33,6 +33,8 @@ class PointWiseGatedProjection(nn.Module):
     def __init__(self, config: BaseConfiguration):
         super().__init__()
         self.intermediate_size = config.intermediate_dim
+        # print(f"## config hidden dim {config.hidden_dim}")
+        # print(f"## config intermediate dim {config.intermediate_dim}")
         self.gate_projection = nn.Linear(config.hidden_dim, config.intermediate_dim, bias=False)
         self.up_projection = nn.Linear(config.hidden_dim, config.intermediate_dim, bias=False)
         self.down_projection = nn.Linear(config.intermediate_dim, config.hidden_dim, bias=False)
