@@ -24,12 +24,7 @@ class TestLayerNorm(unittest.TestCase):
         input_tensor = torch.randn(10, 4)
         output_tensor = self.layer_norm(input_tensor)
         mean = output_tensor.mean(-1) # Checking Mean Value across model dimension
-        # print(f"### Mean is {mean}")
         variance = output_tensor.var(-1, unbiased=False) # checking Variance value across model dimension
-
-        # print(f"### Vairance is {variance}")
-
-        # print(f"Torch zeros like {torch.zeros_like(mean)}")
         self.assertTrue(
             torch.allclose(mean, torch.zeros_like(mean), atol=1e-5) # mean should be somewhat close to 0
         )
@@ -47,15 +42,11 @@ class TestLayerNorm(unittest.TestCase):
         # print(f"output tensor is {output_tensor[0]}")
         mean = input_tensor[0].mean()
         variance = input_tensor[0].var(unbiased=False)
-
-        # print(f"Mean is {input_tensor[0].mean()}")
-        # print(f"Variance is {input_tensor[0].var(unbiased=False)}")
-
+        
         normalized_input = (
                                    input_tensor[0] - mean
                            ) / torch.sqrt(variance + self.layer_norm.epsilon)
 
-        # x - mean / torch.sqrt(var + epi)
         expected_output = self.layer_norm.gamma * normalized_input + self.layer_norm.beta
 
         self.assertTrue(
