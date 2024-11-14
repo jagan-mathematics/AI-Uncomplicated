@@ -78,8 +78,5 @@ class DecoderLayer(nn.Module):
         hidden_state = self.mlp(hidden_state)
         hidden_state = self.dropout2(hidden_state)
         hidden_state = residual_x + hidden_state
-
-        if output_attentions:
-            return hidden_state, self_attn_weights
-        return hidden_state
+        return hidden_state, self_attn_weights
 
