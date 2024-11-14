@@ -6,8 +6,6 @@ import torch
 
 import math
 
-from core.utils.masks import _update_causal_mask
-
 
 class RopeAttention(nn.Module):
     def __init__(self, config: BaseConfiguration):
@@ -51,8 +49,7 @@ class RopeAttention(nn.Module):
         
 
     def forward(self, input_tensor, attention_mask, output_attentions=False):
-        print(f"input tensor shape in attention forward is {input_tensor.shape}")
-        b_size, seq_len, _ = input_tensor.shape # [4, 10, 512] [B * S * D]
+        b_size, seq_len, _ = input_tensor.shape
         
         query_state = self.query_projecton(input_tensor) # [B * S * D]
         key_state = self.key_projecton(input_tensor) # [B * S * D]
