@@ -20,14 +20,14 @@ class DecoderLayer(nn.Module):
             intermediate_dim=2048
         )
 
-        self.norm1 = LayerNorm(model_dimension=base_cfg.hidden_dim)
+        self.input_norm = LayerNorm(model_dimension=base_cfg.hidden_dim)
         self.self_attn = RopeAttention(
             config=base_cfg
         )
-        self.dropout = nn.Dropout(p=dropout)
+        self.attention_dropout = nn.Dropout(p=dropout)
 
-        self.norm2 = LayerNorm(model_dimension=base_cfg.hidden_dim)
-        self.ffn = PointWiseGatedProjection(config=base_cfg)
+        self.post_attention_norm = LayerNorm(model_dimension=base_cfg.hidden_dim)
+        self.mlp = PointWiseGatedProjection(config=base_cfg)
         self.dropout2 = nn.Dropout(p=dropout)
 
     # def forward(self, dec, targ_mask): # POST LAYER NORMALIZATION
@@ -45,22 +45,41 @@ class DecoderLayer(nn.Module):
     #     return x
 
 
-    def forward(self, dec, targ_mask):
-        x = self.norm1(dec) # Trying Pre Layer Norm as discussed
-        # x = x.view(x.size(0), x.size(1), 8, 64)
-        causal_mask = _update_causal_mask(dec, targ_mask)
-        x, _ = self.self_attn(input_tensor=x, attention_mask=causal_mask)
-        x = self.dropout(x)
-        x = dec + x
+    def forward(self, hidden_state, attention_mask):
+        """
+         https://arxiv.org/pdf/2002.04745 (PRE-Norm)
 
-        y = self.norm2(x)
-        y = self.ffn(y)
-        y = self.dropout(y)
-        y = x + y
+         
+        x = embedding of each tokens (B x S x D)
+        mask = self_attention autput (B x S x D)
 
-        return y
+        Self-attention sub-block 1
+        x => norm(x) => n_x => att(n_x) => (a_x, a_score) => a_x + x => h_x
 
+        MLP sub-block: 2
 
+        h_x => norm(h_x) => n_hx => mlp(n_hx) => n_x => x_x + h_x => h_x
+        """
+        residual_x = hidden_state
+        
+        hidden_state = self.input_norm(hidden_state)
 
+        hidden_states, self_attn_weights = self.self_attn(
+            hidden_states=hidden_state,
+            attention_mask=attention_mask,
+            output_attentions=output_attentions,
+        )
+        hidden_states = self.attention_dropout(hidden_states)
+        hidden_states = residual_x + hidden_state
+        # point forward inner bloc
+        residual_x = hidden_state
 
+        hidden_state = self.post_attention_norm(hidden_states)
+        hidden_state = self.mlp(hidden_state)
+        hidden_state = self.dropout2(hidden_state)
+        hidden_state = residual_x + hidden_state
+
+        if output_attentions:
+            return hidden_state, self_attn_weights
+        return hidden_state
 
