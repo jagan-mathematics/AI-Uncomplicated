@@ -5,7 +5,7 @@ def _update_causal_mask(
         attention_mask: torch.Tensor,
 ):
     dtype, device = input_tensor.dtype, input_tensor.device
-    batch_size, _, sequence_length, _ = input_tensor.shape
+    batch_size, sequence_length, _ = input_tensor.shape
     
     min_dtype = torch.finfo(dtype).min
     

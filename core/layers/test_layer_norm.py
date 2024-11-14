@@ -29,7 +29,7 @@ class TestLayerNorm(unittest.TestCase):
 
         # print(f"### Vairance is {variance}")
 
-        print(f"Torch zeros like {torch.zeros_like(mean)}")
+        # print(f"Torch zeros like {torch.zeros_like(mean)}")
         self.assertTrue(
             torch.allclose(mean, torch.zeros_like(mean), atol=1e-5) # mean should be somewhat close to 0
         )

@@ -13,7 +13,7 @@ class BaseConfiguration(object):
     model_max_sequence: int = 2048
     num_heads: int = 8
     attention_dropout = 0.0
-    head_dim = None
+    head_dim: int = None
     use_rope = True
     rope_base = 10000
     
