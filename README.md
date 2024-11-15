@@ -20,6 +20,7 @@ project
 |   |____configuratioin (hold all model configuration)
 |   |____layers (hold all custom transformers and other model layers)
 |   |____utils (hold all helper utils)
+|   |____training (holds all training related modules)
 │___study (contains other experimentation studies and other resources)
 |
 ```
