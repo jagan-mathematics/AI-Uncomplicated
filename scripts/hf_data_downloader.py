@@ -6,7 +6,7 @@ from pathlib import Path
 from huggingface_hub import snapshot_download
 
 
-def download_dataset(repo_id, local_dir, allow_patterns, num_workers=16):
+def download_dataset(repo_id, revision, local_dir, allow_patterns, num_workers=16):
     """method download files as an snapshots
 
     Args:
@@ -31,6 +31,7 @@ def download_dataset(repo_id, local_dir, allow_patterns, num_workers=16):
             snapshot_download(
                 repo_id,
                 repo_type="dataset",
+                revision=revision,
                 local_dir=local_dir,
                 allow_patterns=allow_patterns,
                 resume_download=True,
@@ -65,7 +66,8 @@ def main(args, seed=42):
         repo_id=args.dataset,
         local_dir=str(src_dir),
         allow_patterns=args.allowed_pattern,
-        num_workers=args.num_workers
+        num_workers=args.num_workers,
+        revision=args.revision
     )
 
         
@@ -75,6 +77,7 @@ if __name__ == "__main__":
     parser.add_argument("--working_dir", type=str, default="data")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--allowed_pattern", type=str, default=None)
+    parser.add_argument("--revision", type=str, default=None)
     parser.add_argument("--num_workers", type=int, default=16)
 
     args = parser.parse_args()
