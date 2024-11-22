@@ -81,7 +81,6 @@ class LLM:
         return hidden_states
 
     def generate(self, input_ids, max_length=100):
-        self.eval()
 
         with torch.no_grad():
             for _ in range(max_length):
@@ -105,3 +104,4 @@ class LLM:
                     break
 
         return input_ids
+
