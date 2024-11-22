@@ -23,6 +23,11 @@ def download_dataset(repo_id, revision, local_dir, allow_patterns, num_workers=1
     
     Increase the num workers to enjoy the parallelism
     """
+    languages = [ "en", "fr", "de", "es", "it", "nl", "pl", "pt", "sv", "da", "fi" ] 
+    
+    if allow_patterns is None:
+        allow_patterns = [f"{lang}/**/*.parquet" for lang in languages]
+        
     print(f"Downloading dataset from {repo_id}...")
     max_retries = 5
     retry_delay = 10  # seconds
