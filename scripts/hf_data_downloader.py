@@ -1,56 +1,7 @@
 import argparse
-import os
-import time
-import requests
+from data_processing.downloaders import download_dataset_from_huggingface
 from pathlib import Path
-from huggingface_hub import snapshot_download
 
-
-def download_dataset(repo_id, revision, local_dir, allow_patterns, num_workers=16):
-    """method download files as an snapshots
-
-    Args:
-        repo_id (str): huggingface dataset repo id
-        local_dir (str): destination folder to store files
-        allow_patterns (str): file patter
-        num_workers (str): number of workers to download files
-        
-    Eg:
-    If hf repo contains files in parquer format use pattern like
-        `.parquet`
-    If in sub-folder of parquet format
-        `**.parquet`
-    
-    Increase the num workers to enjoy the parallelism
-    """
-    languages = [ "en", "fr", "de", "es", "it", "nl", "pl", "pt", "sv", "da", "fi" ] 
-    
-    if allow_patterns is None:
-        allow_patterns = [f"{lang}/**/*.parquet" for lang in languages]
-        
-    print(f"Downloading dataset from {repo_id}...")
-    max_retries = 5
-    retry_delay = 10  # seconds
-    for attempt in range(max_retries):
-        try:
-            snapshot_download(
-                repo_id,
-                repo_type="dataset",
-                revision=revision,
-                local_dir=local_dir,
-                allow_patterns=allow_patterns,
-                resume_download=True,
-                max_workers=num_workers
-            )
-            break
-        except requests.exceptions.ReadTimeout:
-            if attempt < max_retries - 1:
-                print(f"Timeout occurred. Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
-            else:
-                raise
-    print(f"Dataset downloaded to {local_dir}")
-    
     
     
 def main(args, seed=42):
@@ -67,7 +18,7 @@ def main(args, seed=42):
         src_dir.mkdir(parents=True)
     
     # download dataset
-    download_dataset(
+    download_dataset_from_huggingface(
         repo_id=args.dataset,
         local_dir=str(src_dir),
         allow_patterns=args.allowed_pattern,
@@ -81,7 +32,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str)
     parser.add_argument("--working_dir", type=str, default="data")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--allowed_pattern", type=str, default=None)
+    parser.add_argument("--allowed_pattern", type=str, default=None, help="multiple patterns can be provided as comma seperated format")
     parser.add_argument("--revision", type=str, default=None)
     parser.add_argument("--num_workers", type=int, default=16)
 
