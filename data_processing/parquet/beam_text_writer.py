@@ -8,6 +8,8 @@ from apache_beam.runners.runner import PipelineResult
 from datetime import datetime
 from apache_beam.options.pipeline_options import PipelineOptions, StandardOptions, DirectOptions, WorkerOptions
 import multiprocessing
+from apache_beam.io import WriteToText
+
                 
 def create_pipeline_options(num_workers=None):
     if num_workers is None:
@@ -38,6 +40,7 @@ class FormatRowToString(beam.DoFn):
         text = element[self.column_name]
         if text.strip("\n").strip():
             yield text
+            
 
 def run_parallel_pipeline(languages, input_base, output_base, chunk_size, pipeline_options=None, column_name="text"):
     options = pipeline_options or beam.options.pipeline_options.PipelineOptions()
@@ -57,14 +60,25 @@ def run_parallel_pipeline(languages, input_base, output_base, chunk_size, pipeli
             pcol = (pipeline 
                 | f'read_data_{language}' >> ReadFromParquet(f"{input_base}/{language}/**/**.parquet")
                 | f'filter_rows_{language}' >> beam.ParDo(FormatRowToString(column_name=column_name))
-                | f'write_to_text_{language}' >> beam.io.WriteToText(
+            )
+            
+            line_count = (pcol | f"num_lines_{language}" >> beam.Map(lambda x: (language, 1))
+                               | f"counter_{language}" >> beam.CombinePerKey(sum))
+            def format_result(word_count):
+                    (word, count) = word_count
+                    return "{}: {}".format("line_count", count)
+
+            output = (line_count | f'Format_{language}' >> beam.Map(format_result)
+                    | f"write_meta_{language}" >> WriteToText(output_base + f"/{language}.meta"))
+            
+            
+            pcol | f'write_to_text_{language}' >> beam.io.WriteToText(
                     file_path_prefix=os.path.join(output_base, language, "data"),
                     file_name_suffix="-processed.txt",
                     append_trailing_newlines=False,
                     max_records_per_shard=chunk_size,
                     skip_if_empty=True
                 )
-            )
             pcols.append(pcol)
 
 if __name__ == "__main__":
