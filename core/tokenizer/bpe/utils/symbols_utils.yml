@@ -1759,4 +1759,8 @@ user_defined_symbols:
 - '998'
 - '999'
 control_symbols:
-- <start_of_turn>,<end_of_turn>,<system_prompt>,<language>,</language>
+- <start_of_turn>
+- <end_of_turn>
+- <system_prompt>
+- <language>
+- </language>

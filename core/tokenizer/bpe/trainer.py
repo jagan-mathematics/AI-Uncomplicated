@@ -5,29 +5,32 @@ import glob
 import yaml
 import time
 import argparse
-
+import logging
+import os
 
 class CustomTrainingTokenizer:
     def __init__(self,
                  data_dir: str,
-                 output_dir: str,
-                 languages: Optional[List[str]] = None,
+                 model_path: str,
                  vocab_size: int = 64000,
                  model_type: str = 'bpe',
                  yaml_file_path: Optional[str] = None):
+        self.sp_model = None
         self.data_path = data_dir
         self.data_dir = Path(data_dir)
-        self.output_dir = Path(output_dir)
-        self.languages = languages or ["en", "fr", "de", "es", "it", "nl", "pl", "pt"]
+        self.model_path = Path(model_path)
         self.vocab_size = vocab_size
         self.sp_model = None
-        if yaml_file_path:
-            self.yaml_file_path = yaml_file_path
+        self.yaml_file_path = yaml_file_path
         self.model_type = model_type
+        user_defined_symbols, control_symbols = self.get_yaml_list()
+        self.user_defined_symbols = user_defined_symbols
+        self.control_symbols = control_symbols
+        
 
-    def get_training_files(self) -> str:
+    def get_training_files(self, allowed_pattern) -> str:
         try:
-            path = self.data_path + "**/*.txt"
+            path = os.path.join(self.data_path, allowed_pattern)
             training_files = glob.glob(path)
 
             if not training_files:
@@ -41,6 +44,8 @@ class CustomTrainingTokenizer:
 
     def get_yaml_list(self):
         """Read the yaml and get the user fefined symbol and control symbol"""
+        if self.yaml_file_path is None:
+            return [], []
         try:
             with open(self.yaml_file_path, 'r') as file:
                 data = yaml.safe_load(file)
@@ -51,13 +56,12 @@ class CustomTrainingTokenizer:
         except Exception as e:
             print(f"Exception While loading yaml file {str(e)}")
 
-    def train_tokenizer(self, model_name: str = "tokenizer", character_coverage: float = 0.995, num_threads: int = 256):
-        input_files = self.get_training_files()
-        model_prefix = str(self.output_dir / model_name)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        user_defined_symbols, control_symbols = self.get_yaml_list()
+    def train_tokenizer(self, model_name: str = "tokenizer", character_coverage: float = 0.995, num_threads: int = 256, allowed_pattern="**/*.txt"):
+        input_files = self.get_training_files(allowed_pattern)
+        model_prefix = str(self.model_path / model_name)
+        self.model_path.mkdir(parents=True, exist_ok=True)
 
-        if user_defined_symbols and control_symbols:
+        if self.user_defined_symbols and self.control_symbols:
             print(f"========= Training Tokenizer with Given YML File symbols ==========")
 
         print("Starting tokenizer training...")
@@ -73,7 +77,7 @@ class CustomTrainingTokenizer:
                 split_by_unicode_script=True,
                 split_by_whitespace=True,
                 split_digits=True,
-                treat_whitespace_as_suffix=True,
+                treat_whitespace_as_suffix=False,
                 byte_fallback=True,
                 add_dummy_prefix=True,
                 remove_extra_whitespaces=True,
@@ -83,8 +87,8 @@ class CustomTrainingTokenizer:
                 pad_piece="<pad>",
                 max_sentence_length=64000,
                 train_extremely_large_corpus=True,
-                control_symbols=control_symbols,
-                user_defined_symbols=user_defined_symbols,
+                control_symbols=self.control_symbols,
+                user_defined_symbols=self.user_defined_symbols,
 
             )
             print(f"\nTokenizer trained successfully!")
@@ -95,8 +99,10 @@ class CustomTrainingTokenizer:
             print(f"Error during training: {str(e)}")
             raise
 
-    def load_model(self, model_path: str):
-        self.sp_model = spm.SentencePieceProcessor(model_file=model_path)
+    def load_model(self):
+        if self.sp_model is not None:
+            print("[Warning!!!] Overwirting existing model...")
+        self.sp_model = spm.SentencePieceProcessor(model_file=self.model_path)
         return self.sp_model
 
     def encode(self,
@@ -105,6 +111,8 @@ class CustomTrainingTokenizer:
                add_bos: bool = True,
                add_eos: bool = True) -> Union[List[str], List[int], List[List[str]], List[List[int]]]:
 
+        if self.sp_model is None:
+            raise ValueError("Model not loaded. Call load_model() first.")
         if isinstance(text, str):
             return self.sp_model.encode(
                 text,
@@ -167,9 +175,10 @@ if __name__ == "__main__":
         "--num_threads", type=int, default=256,
         help="Number of threads to use during training (default: 256)."
     )
+
     parser.add_argument(
-        "--languages", type=list, default=['en'],
-        help="List of Languages to be processed"
+        "--allowed_pattern", type=str, default="**/*.txt",
+        help="allowed pattern to extract data from folder or sub-folders"
     )
 
     args = parser.parse_args()
@@ -179,15 +188,14 @@ if __name__ == "__main__":
 
     tokenizer = CustomTrainingTokenizer(
         data_dir=args.data_dir,
-        output_dir=args.output_dir,
+        model_path=args.output_dir,
         vocab_size=args.vocab_size,
         yaml_file_path=args.yaml_file_path,
         model_type=args.model_type,
-        languages=args.languages
     )
 
     tokenizer.train_tokenizer(model_name=args.model_name, character_coverage=args.character_coverage,
-                              num_threads=args.num_threads)
+                              num_threads=args.num_threads, allowed_pattern=args.allowed_pattern)
 
     print("Time taken to complete :: ", round(time.time() - start_time, 2))
     print("==== TOKENIZER TRAINED SUCCESSFULLY =====")
