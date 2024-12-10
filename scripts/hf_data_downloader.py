@@ -1,12 +1,11 @@
 import argparse
-import os
+from pathlib import Path
+import requests
 import time
 import requests
-from pathlib import Path
 from huggingface_hub import snapshot_download
 
-
-def download_dataset(repo_id, revision, local_dir, allow_patterns, num_workers=16):
+def download_dataset_from_huggingface(repo_id, revision, local_dir, allow_patterns, num_workers=16):
     """method download files as an snapshots
 
     Args:
@@ -23,10 +22,9 @@ def download_dataset(repo_id, revision, local_dir, allow_patterns, num_workers=1
     
     Increase the num workers to enjoy the parallelism
     """
-    languages = [ "en", "fr", "de", "es", "it", "nl", "pl", "pt", "sv", "da", "fi" ] 
     
-    if allow_patterns is None:
-        allow_patterns = [f"{lang}/**/*.parquet" for lang in languages]
+    if allow_patterns is not None:
+        allow_patterns = allow_patterns.split(",")
         
     print(f"Downloading dataset from {repo_id}...")
     max_retries = 5
@@ -51,6 +49,7 @@ def download_dataset(repo_id, revision, local_dir, allow_patterns, num_workers=1
                 raise
     print(f"Dataset downloaded to {local_dir}")
     
+
     
     
 def main(args, seed=42):
@@ -67,7 +66,7 @@ def main(args, seed=42):
         src_dir.mkdir(parents=True)
     
     # download dataset
-    download_dataset(
+    download_dataset_from_huggingface(
         repo_id=args.dataset,
         local_dir=str(src_dir),
         allow_patterns=args.allowed_pattern,
@@ -81,7 +80,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str)
     parser.add_argument("--working_dir", type=str, default="data")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--allowed_pattern", type=str, default=None)
+    parser.add_argument("--allowed_pattern", type=str, default=None, help="multiple patterns can be provided as comma seperated format")
     parser.add_argument("--revision", type=str, default=None)
     parser.add_argument("--num_workers", type=int, default=16)
 
