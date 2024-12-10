@@ -2,7 +2,7 @@
 import torch
 import unittest
 
-from core.layers.decoder.decoder import DecoderLayer
+from core.models.decoder import DecoderLayer
 
 
 class TestDecoderLayer(unittest.TestCase):
