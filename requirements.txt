@@ -15,4 +15,6 @@ transformers
 torch>2.0.0
 matplotlib==3.9.2
 seaborn==0.13.2
-apache-beam==2.60.0
+regex~=2024.11.6
+tokenizers~=0.20.3
+datasets~=3.1.0
