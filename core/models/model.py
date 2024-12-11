@@ -1,6 +1,5 @@
 import torch
 import torch.nn.init
-from sympy.physics.units import temperature
 
 from core.configurations.base import BaseConfiguration
 from core.models.decoder import DecoderLayer
@@ -21,10 +20,6 @@ class LLM(nn.Module):
             embedding_dim=config.hidden_dim,
             padding_idx=config.padding_id
         )
-
-        self.rope_embeddings = RopePositionEmbedding(
-            hidden_dim=config.hidden_dim
-        )
         
         # Decoder layer stack
         self.decoder_layers = nn.ModuleList([
@@ -41,8 +36,15 @@ class LLM(nn.Module):
         self.final_layer_norm = LayerNorm(
             model_dimension=config.hidden_dim
         )
-        
+
+        self.lm_head = nn.Linear(
+            in_features=config.hidden_dim,
+            out_features=config.vocabulary_size,
+            bias=False
+        )
+
         self.apply(self._init_weights)
+
 
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):
@@ -64,15 +66,31 @@ class LLM(nn.Module):
         # Get token embeddings first
         hidden_states = self.token_embeddings(input_tensor)
 
+        last_hidden_state = ()
+
         for decoder_layer in self.decoder_layers:
             hidden_states = decoder_layer(
                 hidden_states,
                 causal_mask
             )
 
+        if hidden_states:
+            last_hidden_state = hidden_states
+
+
         hidden_states = self.final_layer_norm(hidden_states)
-        
-        return hidden_states
+
+        logits = self.lm_head(hidden_states)
+
+        if self.config.output_last_hidden_state:
+            return {
+                "logits" : logits,
+                "last_hidden_state" : last_hidden_state
+            }
+
+        return {
+            "logits" : logits
+        }
 
     def generate(self, input_ids, max_length=100, temperature=1.0):
         with torch.no_grad():
