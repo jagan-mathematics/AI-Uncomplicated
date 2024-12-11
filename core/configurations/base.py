@@ -19,6 +19,7 @@ class BaseConfiguration(object):
     head_dim: int = None
     use_rope: bool = True
     rope_base: float = 10000.0
+    output_last_hidden_state: bool = False
 
     def __post_init__(self):
         if self.head_dim is None:
