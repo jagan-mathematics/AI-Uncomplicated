@@ -12,13 +12,6 @@ from core.utils.masks import _update_causal_mask
 class DecoderLayer(nn.Module):
     def __init__(self, base_cfg: BaseConfiguration):
         super(DecoderLayer, self).__init__()
-        # base_cfg = BaseConfiguration(
-        #     hidden_dim=512,
-        #     head_dim=64,
-        #     num_heads=8,
-        #     max_positions=512,
-        #     intermediate_dim=2048
-        # )
 
         self.input_norm = LayerNorm(model_dimension=base_cfg.hidden_dim)
         self.self_attn = RopeAttention(
@@ -29,20 +22,6 @@ class DecoderLayer(nn.Module):
         self.post_attention_norm = LayerNorm(model_dimension=base_cfg.hidden_dim)
         self.mlp = PointWiseGatedProjection(config=base_cfg)
         self.dropout2 = nn.Dropout(p=base_cfg.attention_dropout)
-
-    # def forward(self, dec, targ_mask): # POST LAYER NORMALIZATION
-    #     _x = dec # input copy for norm
-    #
-    #     x , _ = self.self_attn(input_tensor=dec, attention_mask=targ_mask) #
-    #     x = self.dropout(x)
-    #     x = self.norm1(x + _x)
-    #
-    #     _x = x # input copy for norm
-    #     x = self.ffn(x)
-    #     x = self.dropout2(x)
-    #     x = self.norm2(x + _x)
-    #
-    #     return x
 
 
     def forward(self, hidden_state, attention_mask, output_attentions=False):
