@@ -65,9 +65,8 @@ class LLM(nn.Module):
         hidden_states = self.token_embeddings(input_tensor)
 
         for decoder_layer in self.decoder_layers:
-            position_embedded = self.rope_embeddings(hidden_states)
             hidden_states = decoder_layer(
-                position_embedded,
+                hidden_states,
                 causal_mask
             )
 

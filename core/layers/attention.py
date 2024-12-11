@@ -32,17 +32,17 @@ class RopeAttention(nn.Module):
                 base=config.rope_base
             )
         
-        self.query_projecton = nn.Linear(in_features=config.hidden_dim, 
+        self.query_projection = nn.Linear(in_features=config.hidden_dim, 
                                     out_features=config.hidden_dim,
                                     bias=False)
-        self.key_projecton = nn.Linear(in_features=config.hidden_dim, 
+        self.key_projection = nn.Linear(in_features=config.hidden_dim, 
                                     out_features=config.hidden_dim,
                                     bias=False)
-        self.value_projecton = nn.Linear(in_features=config.hidden_dim, 
+        self.value_projection = nn.Linear(in_features=config.hidden_dim, 
                                     out_features=config.hidden_dim,
                                     bias=False)
         
-        self.output_projecton = nn.Linear(in_features=config.hidden_dim, 
+        self.output_projection = nn.Linear(in_features=config.hidden_dim, 
                                     out_features=config.hidden_dim,
                                     bias=False)
 
