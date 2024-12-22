@@ -13,6 +13,9 @@ This repository is dedicated to a comprehensive exploration of the Transformer a
    uv add <package-name>
    ```
 
+- Note:
+The `apache-beam` library is utilized as a large-scale data processing tool in this repository. However, due to dependency conflicts with other packages, it has been intentionally excluded from the `requirements-dev.txt` file. It is strongly recommended to install this package separately.
+
 ## Repository Structure
 ```
 project
