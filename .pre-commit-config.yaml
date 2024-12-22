@@ -25,3 +25,4 @@ repos:
       entry: uv sync
       language: system
       types: [python]
+      always_run: true
