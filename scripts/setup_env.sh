@@ -75,6 +75,8 @@ conda install git -y
 pip install ninja
 pip install uv==0.5.11
 pip install --requirement requirements-dev.txt
+pip install --requirement requirements-ci.txt
+pre-commit install
 
 
 
