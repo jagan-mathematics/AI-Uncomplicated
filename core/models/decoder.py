@@ -40,22 +40,25 @@ class DecoderLayer(nn.Module):
         h_x => norm(h_x) => n_hx => mlp(n_hx) => n_x => x_x + h_x => h_x
         """
         residual_x = hidden_state
-        
+
         hidden_state = self.input_norm(hidden_state)
 
         hidden_states, self_attn_weights = self.self_attn(
-            hidden_states=hidden_state,
+            input_tensor=hidden_state,
             attention_mask=attention_mask,
             output_attentions=output_attentions,
         )
+
         hidden_states = self.attention_dropout(hidden_states)
-        hidden_states = residual_x + hidden_state
-        # point forward inner bloc
-        residual_x = hidden_state
+
+        hidden_states = residual_x + hidden_states
+
+        residual_x = hidden_states
 
         hidden_state = self.post_attention_norm(hidden_states)
         hidden_state = self.mlp(hidden_state)
         hidden_state = self.dropout2(hidden_state)
         hidden_state = residual_x + hidden_state
+
         return hidden_state, self_attn_weights
 

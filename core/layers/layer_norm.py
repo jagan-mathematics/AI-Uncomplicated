@@ -17,14 +17,13 @@ class LayerNorm(nn.Module):
 
 
     def forward(self, x):
-        """
-        Goal of Layer norm is to have 0 mean and variance as 1
-        """
+        if isinstance(x, tuple):
+            x = x[0]
         mean = x.mean(-1, keepdim=True)
-        variance = x.var(-1, unbiased=False, keepdim=True) # '-1' means last dimension.(model dimension)
+        variance = x.var(-1, unbiased=False, keepdim=True)
 
-        # computing layer norm across model dimension for each and every sample in batch
-
+        # Layer normalization computation
         output = (x - mean) / torch.sqrt(variance + self.epsilon)
         output = self.gamma * output + self.beta
         return output
+
