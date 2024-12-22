@@ -18,3 +18,10 @@ repos:
   -  id: uv-export
      args: [--no-hashes, "--frozen", "--output-file=requirements-dev.txt"]
      always_run: true
+- repo: local
+  hooks:
+    - id: uv
+      name: uv-sync
+      entry: uv sync
+      language: system
+      types: [python]
