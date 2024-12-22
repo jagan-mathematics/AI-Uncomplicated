@@ -19,6 +19,7 @@ repos:
      args: [--no-hashes, "--frozen", "--output-file=requirements-dev.txt"]
      always_run: true
 
+
 - repo: local
   hooks:
     - id: uv
@@ -27,4 +28,4 @@ repos:
       language: system
       types: [python]
       always_run: true
-      stages: [pre-commit, post-merge]
+      stages: [pre-commit, post-merge, post-checkout, post-rewrite]
