@@ -67,13 +67,14 @@ if conda info --envs | grep -q "$env_prefix"; then
 fi
 
 echo "Creating environment '$env_prefix'..."
-conda create -n $env_prefix python=3.11 -y -c anaconda
+conda create -n $env_prefix python=`cat .python-version` -y -c anaconda
 conda activate $env_prefix
 conda install git -y
 
 # Install packages
 pip install ninja
-pip install --requirement requirements.txt
+pip install uv==0.5.11
+pip install --requirement requirements-dev.txt
 
 
 

@@ -18,6 +18,9 @@ repos:
   -  id: uv-export
      args: [--no-hashes, "--frozen", "--output-file=requirements-dev.txt"]
      always_run: true
+  -  id: uv-export
+     args: [--no-hashes, "--frozen", "--only-group=ci", "--output-file=requirements-ci.txt"]
+     always_run: true
 
 
 - repo: local

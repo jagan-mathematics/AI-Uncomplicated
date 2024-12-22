@@ -31,3 +31,8 @@ dependencies = [
     "viztracer>=1.0.0",
     "wandb>=0.19.1",
 ]
+
+[dependency-groups]
+ci = [
+    "pre-commit>=4.0.1",
+]
