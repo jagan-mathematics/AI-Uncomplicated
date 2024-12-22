@@ -14,4 +14,4 @@ repos:
   rev: 0.5.8
   hooks:
   -  id: uv-export
-     args: [--no-hashes, --format, requirements-txt, new_requirements.txt"]
+     args: [--no-hashes, "--format requirements-txt > new_requirements.txt"]
