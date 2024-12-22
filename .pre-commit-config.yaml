@@ -1,8 +1,9 @@
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.1.0
+    rev: v5.0.0
     hooks:
     -  id: trailing-whitespace
+
 - repo: https://github.com/astral-sh/uv-pre-commit
   # uv version.
   rev: 0.5.11
@@ -13,5 +14,5 @@ repos:
   # uv version.
   rev: 0.5.11
   hooks:
-    - id: uv-export
-      args: ["--frozen", "--output-file=requirements-custom.txt"]
+  -  id: uv-export
+     args: [--no-hashes, "--frozen", "--output-file=requirements-dev.txt"]
