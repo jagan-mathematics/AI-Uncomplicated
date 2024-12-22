@@ -9,9 +9,9 @@ repos:
   hooks:
     # Update the uv lockfile
     - id: uv-lock
-# - repo: https://github.com/astral-sh/uv-pre-commit
-#   # uv version.
-#   rev: 0.5.8
-#   hooks:
-#   -  id: uv-export
-#   -  args: [--no-hashes, --format, requirements-txt, new_requirements.txt"]
+- repo: https://github.com/astral-sh/uv-pre-commit
+  # uv version.
+  rev: 0.5.8
+  hooks:
+  -  id: uv-export
+     args: [--no-hashes, --format, requirements-txt, new_requirements.txt"]
