@@ -3,7 +3,7 @@ repos:
     rev: v2.1.0
     hooks:
     -  id: trailing-whitespace
-    
+
 - repo: https://github.com/astral-sh/uv-pre-commit
   # uv version.
   rev: 0.5.11
@@ -19,13 +19,6 @@ repos:
      args: [--no-hashes, "--frozen", "--output-file=requirements-dev.txt"]
      always_run: true
 
-
-default_install_hook_types:
-  - pre-commit
-  - post-checkout
-  - post-merge
-  - post-rewrite
-repos:
 - repo: local
   hooks:
     - id: uv
@@ -34,3 +27,4 @@ repos:
       language: system
       types: [python]
       always_run: true
+      stages: [pre-commit, post-merge]
