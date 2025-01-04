@@ -4,14 +4,15 @@ from torch import nn
 
 from core.configurations.base import BaseConfiguration
 from core.layers.attention import RopeAttention
+from core.layers.decoder import DecoderLayer
 from core.layers.layer_norm import LayerNorm
 from core.layers.point_wise_projection import PointWiseGatedProjection
 from core.utils.masks import _update_causal_mask
 
 
-class DecoderLayer(nn.Module):
+class ConstrueDecoderLayer(nn.Module):
     def __init__(self, base_cfg: BaseConfiguration):
-        super(DecoderLayer, self).__init__()
+        super().__init__()
 
         self.input_norm = LayerNorm(model_dimension=base_cfg.hidden_dim)
         self.self_attn = RopeAttention(
@@ -28,7 +29,7 @@ class DecoderLayer(nn.Module):
         """
          https://arxiv.org/pdf/2002.04745 (PRE-Norm)
 
-         
+
         x = embedding of each tokens (B x S x D)
         mask = self_attention autput (B x S x D)
 

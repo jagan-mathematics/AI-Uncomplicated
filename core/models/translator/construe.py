@@ -2,7 +2,7 @@ import torch
 import torch.nn.init
 
 from core.configurations.base import BaseConfiguration
-from core.models.decoder import DecoderLayer
+from core.models.translator.decoder import ConstrueDecoderLayer
 from core.layers.layer_norm import LayerNorm
 from core.utils.masks import _update_causal_mask
 from core.layers.positional_embedding.rope_projector import RopePositionEmbedding
@@ -10,7 +10,7 @@ from core.layers.positional_embedding.rope_projector import RopePositionEmbeddin
 from torch import nn
 
 
-class LLM(nn.Module):
+class ConstrueModel(nn.Module):
     def __init__(self, config: BaseConfiguration):
         super().__init__()
 
@@ -24,7 +24,7 @@ class LLM(nn.Module):
 
         # Decoder layer stack
         self.decoder_layers = nn.ModuleList([
-            DecoderLayer(
+            ConstrueDecoderLayer(
                 config
             )
             for _ in range(config.num_layers)
@@ -35,6 +35,36 @@ class LLM(nn.Module):
             model_dimension=config.hidden_dim
         )
 
+
+    def forward(self, input_tensor, attn_mask=None):
+        if attn_mask is None:
+            attn_mask = torch.ones_like(input_tensor)
+
+        hidden_states = self.token_embeddings(input_tensor)
+
+        causal_mask = _update_causal_mask(
+            input_tensor=hidden_states,
+            attention_mask=attn_mask
+        )
+
+
+        for decoder_layer in self.decoder_layers:
+            hidden_states, _ = decoder_layer(
+                hidden_states,
+                causal_mask
+            )
+
+        hidden_states = self.final_layer_norm(hidden_states)
+
+        return hidden_states
+
+
+
+class ConstrueAutoRegressiveModel(nn.Module):
+    def __init__(self, config: BaseConfiguration):
+        super().__init__()
+        self.config = config
+        self.model = ConstrueModel(config)
         self.lm_head = nn.Linear(
             in_features=config.hidden_dim,
             out_features=config.vocabulary_size,
@@ -51,38 +81,15 @@ class LLM(nn.Module):
         elif isinstance(module, nn.Embedding):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
+
     def forward(self, input_tensor, attn_mask=None):
-        if attn_mask is None:
-            attn_mask = torch.ones_like(input_tensor)
-
-        hidden_states = self.token_embeddings(input_tensor)
-
-        causal_mask = _update_causal_mask(
-            input_tensor=hidden_states,
-            attention_mask=attn_mask
-        )
-
-        # Get token embeddings first
-
-        last_hidden_state = ()
-
-        for decoder_layer in self.decoder_layers:
-            hidden_states, _ = decoder_layer(
-                hidden_states,
-                causal_mask
-            )
-
-        if hidden_states is not None and hidden_states.numel() > 0:
-            last_hidden_state = hidden_states
-
-        hidden_states = self.final_layer_norm(hidden_states)
-
+        hidden_states = self.model(input_tensor, attn_mask)
         logits = self.lm_head(hidden_states)
 
         if self.config.output_last_hidden_state:
             return {
                 "logits": logits,
-                "last_hidden_state": last_hidden_state
+                "last_hidden_state": hidden_states
             }
 
         return {
