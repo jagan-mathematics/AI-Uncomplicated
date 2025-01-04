@@ -24,17 +24,34 @@ class RopePositionEmbedding(nn.Module):
     def __init__(self, hidden_dim, max_positions, base):
         super().__init__()
         self.hidden_dim = hidden_dim
+        self.max_positions = max_positions
         self.base = base
+
+        rotatory_matrix = self._get_cache_rotatory_matrix(
+            max_positions=self.max_positions,
+            hidden_dim=self.hidden_dim,
+            base=self.base
+        )
+        self.register_buffer("rotatory_matrix", tensor=rotatory_matrix, persistent=False)
+
+
+    def _get_cache_rotatory_matrix(self, max_positions,
+                             hidden_dim,
+                             base: int = None):
+
+        if base is None:
+            base = 10000
 
         positions = torch.arange(max_positions, dtype=torch.float32)
         angular_freq = 1.0 / (
-                self.base ** (torch.arange(0, self.hidden_dim, 2, dtype=torch.int64).float() / self.hidden_dim)
+                base ** (torch.arange(0, hidden_dim, 2, dtype=torch.int64).float() / hidden_dim)
         )
         angular_freq = angular_freq.float().unsqueeze(0)  # 1 x D/2
         positions = positions.unsqueeze(1)  # S x 1
         rotatory_matrix = positions @ angular_freq  # S x D/2
+        return rotatory_matrix
 
-        self.register_buffer("rotatory_matrix", tensor=rotatory_matrix, persistent=False)
+
 
     @torch.no_grad()
     def forward(self, x):

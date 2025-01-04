@@ -4,10 +4,8 @@ from torch import nn
 
 from core.configurations.base import BaseConfiguration
 from core.layers.attention import RopeAttention
-from core.layers.decoder import DecoderLayer
 from core.layers.layer_norm import LayerNorm
 from core.layers.point_wise_projection import PointWiseGatedProjection
-from core.utils.masks import _update_causal_mask
 
 
 class ConstrueDecoderLayer(nn.Module):
