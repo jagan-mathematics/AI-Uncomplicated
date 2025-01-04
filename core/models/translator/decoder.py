@@ -43,20 +43,17 @@ class ConstrueDecoderLayer(nn.Module):
         residual_x = hidden_state
 
         hidden_state = self.input_norm(hidden_state)
-
-        hidden_states, self_attn_weights = self.self_attn(
+        hidden_state, self_attn_weights = self.self_attn(
             input_tensor=hidden_state,
             attention_mask=attention_mask,
             output_attentions=output_attentions,
         )
+        hidden_state = self.attention_dropout(hidden_state)
+        hidden_state = residual_x + hidden_state
 
-        hidden_states = self.attention_dropout(hidden_states)
+        residual_x = hidden_state
 
-        hidden_states = residual_x + hidden_states
-
-        residual_x = hidden_states
-
-        hidden_state = self.post_attention_norm(hidden_states)
+        hidden_state = self.post_attention_norm(hidden_state)
         hidden_state = self.mlp(hidden_state)
         hidden_state = self.dropout2(hidden_state)
         hidden_state = residual_x + hidden_state

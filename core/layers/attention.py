@@ -64,7 +64,7 @@ class RopeAttention(nn.Module):
 
         if self.use_rope:
             cos, sin = self.rope_position_projection(query_state)  # B x S x D
-            query_state, value_state = apply_positional_embedding(query_state, value_state, cos, sin)
+            query_state, key_state = apply_positional_embedding(query_state, key_state, cos, sin)
 
         attn_weights = torch.matmul(query_state, key_state.transpose(2, 3)) * self.scaling
 
@@ -72,13 +72,13 @@ class RopeAttention(nn.Module):
             if attention_mask.dim() == 3:
                 attention_mask = attention_mask.unsqueeze(1)  # Add num_heads dimension
         attention_mask = attention_mask[:, :, :, :key_state.shape[-2]]  # B x H x Q_s x K_s
-        attn_weights = attn_weights * attention_mask
+        attn_weights = attn_weights + attention_mask
 
         attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_state.dtype)
+
         attn_weights = nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)
 
         attn_output = torch.matmul(attn_weights, value_state)
-
         if attn_output.size() != (b_size, self.num_heads, seq_len, self.head_dim):
             raise ValueError(
                 f"`attn_output` should be of size {(b_size, self.num_heads, seq_len, self.head_dim)}, but is"

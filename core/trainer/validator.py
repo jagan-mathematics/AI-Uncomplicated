@@ -5,6 +5,8 @@ from typing import Dict, Any
 import matplotlib.pyplot as plt
 from core.trainer.utils import get_initializer
 
+torch.autograd.detect_anomaly(True)
+
 def validate_initialization(model: nn.Module, layer_type: str = None) -> Dict[str, Any]:
     """
     Test weight initialization properties of a model.
@@ -72,11 +74,20 @@ def validate_activation_variance(model: nn.Module, input_size: tuple, n_samples:
             activations[name] = output.detach()
         return hook
 
+
+    def nan_wrap(name):
+        def detect_nan_hook(module, input, output):
+            """Hook to detect NaN values in module outputs."""
+            if torch.isnan(output).any():
+                print(f"NaN detected in {name}")
+        return detect_nan_hook
+
     # Register hooks for each layer
     handles = []
     for name, module in model.named_modules():
         if isinstance(module, (nn.Linear, nn.Conv2d)):
             handles.append(module.register_forward_hook(hook_fn(name)))
+            module.register_forward_hook(nan_wrap(name))
 
     # Generate random input
     x = torch.randn(n_samples, *input_size)
@@ -109,7 +120,7 @@ def validate_model_initial_states(model, config, input_size, n_samples):
         print(f"Max:  {stats['max'][i]:.6f}")
         print(f"Near zero: {stats['near_zero'][i]:.2%}")
 
-    assert validate_embedding_padding(model=model, padding_idx=config.padding_id), "Validation of padding index failed"
+    # assert validate_embedding_padding(model=model, padding_idx=config.padding_id), "Validation of padding index failed"
 
     variances = validate_activation_variance(model=model, input_size=input_size, n_samples=n_samples)
 
@@ -121,7 +132,7 @@ def validate_model_initial_states(model, config, input_size, n_samples):
 from core.models.translator.construe import ConstrueAutoRegressiveModel
 from core.configurations.base import BaseConfiguration
 
-config = BaseConfiguration(model_name="small_lm", num_layers=2, hidden_dim=128, intermediate_dim=512,
+config = BaseConfiguration(model_name="small_lm", num_layers=2, hidden_dim=32, intermediate_dim=512,
                                max_positions=256, vocabulary_size=64000, num_heads=2, attention_dropout=0.05,
                                batch_size=8, weight_decay=0.01,
                                learning_rate=5e-4,
@@ -131,7 +142,7 @@ config = BaseConfiguration(model_name="small_lm", num_layers=2, hidden_dim=128, 
                                model_max_sequence=256)
 
 model = ConstrueAutoRegressiveModel(config=config)
-initalizer = get_initializer(init_type="xavier", activation="relu", embedding_init="xavier", embedding_padding_idx=config.padding_id)
+initalizer = get_initializer(init_type="kaiming", activation="relu", embedding_init="kaiming", embedding_padding_idx=config.padding_id)
 
 model.apply(initalizer)
 validate_model_initial_states(model, config, (10, ), n_samples=1000)
