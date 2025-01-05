@@ -1,7 +1,32 @@
+import math
 from typing import Callable, Dict, Optional
 import torch
 import torch.nn as nn
 
+
+def calculate_gelu_gain():
+    """
+    Calculates the gain for GELU activation with tanh approximation.
+    Uses numerical differentiation to find the variance preservation factor.
+    """
+    def gelu(x):
+        # GELU with tanh approximation
+        return x * 0.5 * (1 + torch.tanh(math.sqrt(2/math.pi) * (x + 0.044715 * x**3)))
+
+    # Generate random input samples
+    num_samples = 1000000
+    x = torch.randn(num_samples)
+
+    # Calculate numerical derivative
+    epsilon = 1e-6
+    x_plus = x + epsilon
+    x_minus = x - epsilon
+    derivative = (gelu(x_plus) - gelu(x_minus)) / (2 * epsilon)
+
+    # Calculate variance of derivative (gain is square root of this)
+    gain = float(torch.sqrt(torch.mean(derivative**2)))
+
+    return gain
 
 
 def get_initializer(
@@ -50,6 +75,8 @@ def get_initializer(
         if isinstance(m, (nn.Linear, nn.Conv2d)):
             if activation in ['relu', 'leaky_relu']:
                 gain = nn.init.calculate_gain('leaky_relu' if activation == 'leaky_relu' else 'relu')
+            elif activation == "gelu":
+                gain = 1.70093
             else:
                 gain = nn.init.calculate_gain('tanh')
 
@@ -116,27 +143,3 @@ def get_initializer(
                         f"Choose from {list(initializers.keys())}")
 
     return initializers[init_type]
-
-
-
-if __name__ == "__main__":
-    class SimpleNet(nn.Module):
-        def __init__(self, input_size: int, hidden_size: int, output_size: int):
-            super().__init__()
-            self.embedding = nn.Embedding(19, 100)
-            self.layer1 = nn.Linear(input_size, hidden_size)
-            self.layer2 = nn.Linear(hidden_size, output_size)
-
-        def forward(self, x):
-            x = torch.relu(self.layer1(x))
-            return self.layer2(x)
-
-    # Initialize network with different strategies
-    model = SimpleNet(10, 20, 2)
-
-    # Using xavier initialization with ReLU
-    xavier_init = get_initializer('xavier', activation='relu', embedding_init="normal")
-    model.apply(xavier_init)
-
-
-

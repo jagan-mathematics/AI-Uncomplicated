@@ -20,16 +20,6 @@ class BaseConfiguration(object):
     use_rope: bool = True
     rope_base: float = 10000.0
     output_last_hidden_state: bool = False
-    batch_size: int = 32
-    weight_decay: float = 0.001
-    learning_rate: float = 2e-5
-    tokenizer_path: str = "./tokenizer"
-    strides: int = 2
-    dataset_batch_size: int = 256
-    dataset_shuffle: bool = False
-    num_epochs: int = 4
-    eval_frequency: int = 1
-    eval_iter: int = 1
 
     def __post_init__(self):
         if self.head_dim is None:
