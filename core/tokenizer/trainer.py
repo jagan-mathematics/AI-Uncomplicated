@@ -26,7 +26,7 @@ class CustomTrainingTokenizer:
         user_defined_symbols, control_symbols = self.get_yaml_list()
         self.user_defined_symbols = user_defined_symbols
         self.control_symbols = control_symbols
-        
+
 
     def get_training_files(self, allowed_pattern) -> str:
         try:

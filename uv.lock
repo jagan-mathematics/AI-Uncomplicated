@@ -50,6 +50,7 @@ dependencies = [
     { name = "omegaconf" },
     { name = "pynvml" },
     { name = "pyyaml" },
+    { name = "randomname" },
     { name = "regex" },
     { name = "requests" },
     { name = "rouge-score" },
@@ -85,6 +86,7 @@ requires-dist = [
     { name = "omegaconf", specifier = ">=2.3.0" },
     { name = "pynvml", specifier = ">=12.0.0" },
     { name = "pyyaml", specifier = "~=6.0" },
+    { name = "randomname", specifier = ">=0.2.1" },
     { name = "regex", specifier = "~=2024.11.6" },
     { name = "requests", specifier = "~=2.32.3" },
     { name = "rouge-score", specifier = ">=0.1.2" },
@@ -532,6 +534,15 @@ sdist = { url = "https://files.pythonhosted.org/packages/9d/db/3ef5bb276dae18d6e
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b9/f8/feced7779d755758a52d1f6635d990b8d98dc0a29fa568bbe0625f18fdf3/filelock-3.16.1-py3-none-any.whl", hash = "sha256:2082e5703d51fbf98ea75855d9d5527e33d8ff23099bec374a134febee6946b0", size = 16163 },
 ]
+
+[[package]]
+name = "fire"
+version = "0.7.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "termcolor" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6b/b6/82c7e601d6d3c3278c40b7bd35e17e82aa227f050aa9f66cb7b7fce29471/fire-0.7.0.tar.gz", hash = "sha256:961550f07936eaf65ad1dc8360f2b2bf8408fad46abbfa4d2a3794f8d2a95cdf", size = 87189 }
 
 [[package]]
 name = "fonttools"
@@ -1852,6 +1863,15 @@ wheels = [
 ]
 
 [[package]]
+name = "randomname"
+version = "0.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "fire" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e8/c2/525e9e9b458c3ca493d9bd0871f3ed9b51446d26fe82d462494de188f848/randomname-0.2.1.tar.gz", hash = "sha256:b79b98302ba4479164b0a4f87995b7bebbd1d91012aeda483341e3e58ace520e", size = 64242 }
+
+[[package]]
 name = "regex"
 version = "2024.11.6"
 source = { registry = "https://pypi.org/simple" }
@@ -2219,6 +2239,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/af/f6/b17885354c5addfb93c14f3ed7172c33494f989dd5f83c0340d2c8fa3b69/tcolorpy-0.1.6.tar.gz", hash = "sha256:8cea0bf5f8cf03f77528a9acfbf312df935573892ba5ea3b2516e61fa54de9a5", size = 298986 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9e/0f/3571e551b524b3d3ddfa7fd3ec8065941faf4ae1278efefcef976d93587c/tcolorpy-0.1.6-py3-none-any.whl", hash = "sha256:8c15cb3167f30b0a433d72297e9d68667c825bd9e2af41c8dd7dfbd3d7f7e207", size = 8111 },
+]
+
+[[package]]
+name = "termcolor"
+version = "2.5.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/37/72/88311445fd44c455c7d553e61f95412cf89054308a1aa2434ab835075fc5/termcolor-2.5.0.tar.gz", hash = "sha256:998d8d27da6d48442e8e1f016119076b690d962507531df4890fcd2db2ef8a6f", size = 13057 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7f/be/df630c387a0a054815d60be6a97eb4e8f17385d5d6fe660e1c02750062b4/termcolor-2.5.0-py3-none-any.whl", hash = "sha256:37b17b5fc1e604945c2642c872a3764b5d547a48009871aea3edd3afa180afb8", size = 7755 },
 ]
 
 [[package]]

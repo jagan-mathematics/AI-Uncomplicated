@@ -6,12 +6,11 @@ from core.configurations.base import BaseConfiguration
 from core.layers.attention import RopeAttention
 from core.layers.layer_norm import LayerNorm
 from core.layers.point_wise_projection import PointWiseGatedProjection
-from core.utils.masks import _update_causal_mask
 
 
-class DecoderLayer(nn.Module):
+class ConstrueDecoderLayer(nn.Module):
     def __init__(self, base_cfg: BaseConfiguration):
-        super(DecoderLayer, self).__init__()
+        super().__init__()
 
         self.input_norm = LayerNorm(model_dimension=base_cfg.hidden_dim)
         self.self_attn = RopeAttention(
@@ -42,20 +41,20 @@ class DecoderLayer(nn.Module):
         residual_x = hidden_state
 
         hidden_state = self.input_norm(hidden_state)
-
-        hidden_states, self_attn_weights = self.self_attn(
+        hidden_state, self_attn_weights = self.self_attn(
             input_tensor=hidden_state,
             attention_mask=attention_mask,
             output_attentions=output_attentions,
         )
-        hidden_states = self.attention_dropout(hidden_states)
-        hidden_states = residual_x + hidden_state
-        # point forward inner bloc
+        hidden_state = self.attention_dropout(hidden_state)
+        hidden_state = residual_x + hidden_state
+
         residual_x = hidden_state
 
-        hidden_state = self.post_attention_norm(hidden_states)
+        hidden_state = self.post_attention_norm(hidden_state)
         hidden_state = self.mlp(hidden_state)
         hidden_state = self.dropout2(hidden_state)
         hidden_state = residual_x + hidden_state
+
         return hidden_state, self_attn_weights
 
