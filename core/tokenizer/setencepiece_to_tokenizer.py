@@ -13,7 +13,6 @@ def get_unused_peices(model):
     unused_peices = []
     peices = [model.id_to_piece(id) for id in range(model.get_piece_size())]
     for peice in peices:
-        print(peice)
         if re.match(UNSUSED_PIECE_PATTERM, peice):
             unused_peices.append(peice)
     return unused_peices, peices
