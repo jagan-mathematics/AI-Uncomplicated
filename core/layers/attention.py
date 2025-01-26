@@ -38,6 +38,20 @@ class RopeAttention(nn.Module):
                 max_positions=config.max_positions,
                 base=config.rope_base
             )
+        
+        self.query_projection = nn.Linear(in_features=config.hidden_dim, 
+                                    out_features=config.hidden_dim,
+                                    bias=False)
+        self.key_projection = nn.Linear(in_features=config.hidden_dim, 
+                                    out_features=config.hidden_dim,
+                                    bias=False)
+        self.value_projection = nn.Linear(in_features=config.hidden_dim, 
+                                    out_features=config.hidden_dim,
+                                    bias=False)
+        
+        self.output_projection = nn.Linear(in_features=config.hidden_dim, 
+                                    out_features=config.hidden_dim,
+                                    bias=False)
 
         # Initialize projection layers
         self.qkv_projection = nn.Linear(
@@ -46,11 +60,12 @@ class RopeAttention(nn.Module):
             bias=False
         )
 
-        self.output_projection = nn.Linear(
-            config.hidden_dim,
-            config.hidden_dim,
-            bias=False
-        )
+    def forward(self, input_tensor, attention_mask, output_attentions=False):
+        b_size, seq_len, _ = input_tensor.shape
+        
+        query_state = self.query_projecton(input_tensor) # [B * S * D]
+        key_state = self.key_projecton(input_tensor) # [B * S * D]
+        value_state = self.value_projecton(input_tensor) # [B * S * D]
 
     def forward(
         self,
