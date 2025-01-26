@@ -12,6 +12,7 @@ class TrainingConfig:
     warm_up: int = 0
     learning_rate: float = 2e-5
     num_epochs: int = 4
+    logging_steps: int = -1
     eval_frequency: int = 1
     eval_iter: int = 1
     optimzer = "adam"

@@ -78,8 +78,8 @@ class ConstrueAutoRegressiveModel(nn.Module):
         )
 
 
-    def forward(self, input_tensor, attn_mask=None, output_attentions=False, output_hidden_states=False):
-        last_hidden_state, output_attention_weights, hidden_states = self.model(input_tensor, attn_mask)
+    def forward(self, input_ids, attention_mask=None, output_attentions=False, output_hidden_states=False):
+        last_hidden_state, output_attention_weights, hidden_states = self.model(input_ids, attention_mask)
         logits = self.lm_head(last_hidden_state)
 
         return {

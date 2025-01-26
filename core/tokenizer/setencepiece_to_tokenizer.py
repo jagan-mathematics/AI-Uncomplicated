@@ -13,6 +13,7 @@ def get_unused_peices(model):
     unused_peices = []
     peices = [model.id_to_piece(id) for id in range(model.get_piece_size())]
     for peice in peices:
+        print(peice)
         if re.match(UNSUSED_PIECE_PATTERM, peice):
             unused_peices.append(peice)
     return unused_peices, peices
@@ -25,7 +26,6 @@ def convert(model_path, special_tokens, save_path):
 
     model = spm.SentencePieceProcessor(model_file=model_path)
     unused_slots, peices = get_unused_peices(model)
-
     available_unused_slots = len(unused_slots) - 1
     if len(special_tokens) > available_unused_slots:
         raise ValueError(f"Avialble special token slots {available_unused_slots} but given {len(special_tokens)}")
