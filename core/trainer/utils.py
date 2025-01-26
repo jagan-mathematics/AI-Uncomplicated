@@ -3,6 +3,9 @@ from typing import Callable, Dict, Optional
 import torch
 import torch.nn as nn
 
+from core.configurations.base import BaseConfiguration
+from core.trainer.validator import validate_model_initial_states
+
 
 def calculate_gelu_gain():
     """
@@ -143,3 +146,12 @@ def get_initializer(
                         f"Choose from {list(initializers.keys())}")
 
     return initializers[init_type]
+
+
+def initialize_model(model: nn.Module,
+                    init_type: str,
+                    activation: Optional[str] = None,
+                    embedding_init: Optional[str] = None
+                    ):
+    initializer = get_initializer(init_type=init_type, activation=activation, embedding_init=embedding_init)
+    model.apply(initializer)

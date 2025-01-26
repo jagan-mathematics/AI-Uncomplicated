@@ -129,20 +129,21 @@ def validate_model_initial_states(model, config, input_size, n_samples):
         print(f"{layer}: {var:.6f}")
 
 
-from core.models.translator.construe import ConstrueAutoRegressiveModel
-from core.configurations.base import BaseConfiguration
+if __name__ == "__main__":
+    from core.models.translator.construe import ConstrueAutoRegressiveModel
+    from core.configurations.base import BaseConfiguration
 
-config = BaseConfiguration(model_name="small_lm", num_layers=6, hidden_dim=32, intermediate_dim=512,
-                               max_positions=256, vocabulary_size=64000, num_heads=8, attention_dropout=0.05,
-                               batch_size=8, weight_decay=0.01,
-                               learning_rate=5e-4,
-                               tokenizer_path="/workspace/vipin_g6/personal/pretraining/english_tokenizer/english_tokenizer.model",
-                               dataset_batch_size=16, dataset_shuffle=True, num_epochs=2, eval_frequency=1,
-                               eval_iter=10,
-                               model_max_sequence=256)
+    config = BaseConfiguration(model_name="small_lm", num_layers=6, hidden_dim=32, intermediate_dim=512,
+                                max_positions=256, vocabulary_size=64000, num_heads=8, attention_dropout=0.05,
+                                batch_size=8, weight_decay=0.01,
+                                learning_rate=5e-4,
+                                tokenizer_path="/workspace/vipin_g6/personal/pretraining/english_tokenizer/english_tokenizer.model",
+                                dataset_batch_size=16, dataset_shuffle=True, num_epochs=2, eval_frequency=1,
+                                eval_iter=10,
+                                model_max_sequence=256)
 
-model = ConstrueAutoRegressiveModel(config=config)
-initalizer = get_initializer(init_type="xavier", activation="gelu", embedding_init="xavier", embedding_padding_idx=config.padding_id)
+    model = ConstrueAutoRegressiveModel(config=config)
+    initalizer = get_initializer(init_type="xavier", activation="gelu", embedding_init="xavier", embedding_padding_idx=config.padding_id)
 
-model.apply(initalizer)
-validate_model_initial_states(model, config, (10, ), n_samples=1000)
+    model.apply(initalizer)
+    validate_model_initial_states(model, config, (10, ), n_samples=1000)
