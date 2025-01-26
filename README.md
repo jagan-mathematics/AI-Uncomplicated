@@ -8,6 +8,14 @@ This repository is dedicated to a comprehensive exploration of the Transformer a
    sh scripts/setup_env.sh
    ```
 
+2) To add new dependency package to the repo
+   ```bash
+   uv add <package-name>
+   ```
+
+- Note:
+The `apache-beam` library is utilized as a large-scale data processing tool in this repository. However, due to dependency conflicts with other packages, it has been intentionally excluded from the `requirements-dev.txt` file. It is strongly recommended to install this package separately.
+
 ## Repository Structure
 ```
 project
@@ -52,12 +60,12 @@ For advanced users interested in training and modifying BPE tokenizers:
 
 In Transformer models, position encoding is crucial for providing a sense of word order in sequences since these models lack inherent positional awareness. This section explores both absolute and relative position encoding techniques.
 
-- **What is Positional Encoding?**  
-  To grasp the fundamentals of positional encoding and sinusoidal encoding, explore the notebook:  
-  `AI-Uncomplicated/study/sinisouidal_encoding.ipynb`.  
+- **What is Positional Encoding?**
+  To grasp the fundamentals of positional encoding and sinusoidal encoding, explore the notebook:
+  `AI-Uncomplicated/study/sinisouidal_encoding.ipynb`.
   This provides a detailed explanation of how positional information is encoded mathematically in Transformers.
-- **Relative Positional Encoding**  
-  Relative positional encoding introduces flexibility by enabling Transformers to consider relationships between tokens rather than absolute positions. Several new approaches have been proposed to implement this effectively.  
+- **Relative Positional Encoding**
+  Relative positional encoding introduces flexibility by enabling Transformers to consider relationships between tokens rather than absolute positions. Several new approaches have been proposed to implement this effectively.
   Use the notebook `AI-Uncomplicated/study/rope_positional_encoding.ipynb` to delve into the *Rotary Positional Embedding (ROPE)* method, understand its motivation, and see how it works in practice.
 
 

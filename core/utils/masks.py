@@ -1,4 +1,6 @@
+from typing import Optional, Tuple
 import torch
+from torch import Tensor
 
 
 def _update_causal_mask(
