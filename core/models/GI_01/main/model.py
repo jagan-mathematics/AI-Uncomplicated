@@ -2,7 +2,7 @@ import torch
 import torch.nn.init
 
 from core.configurations.base import BaseConfiguration
-from core.models.translator.decoder import ConstrueDecoderLayer
+from core.models.GI_01.main.decoder import ConstrueDecoderLayer
 from core.layers.layer_norm import LayerNorm
 from core.utils.masks import create_causal_mask
 from core.layers.positional_embedding.rope_projector import RopePositionEmbedding

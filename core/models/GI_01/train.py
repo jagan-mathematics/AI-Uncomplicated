@@ -1,5 +1,35 @@
-from core.models.translator.config import ModelConfig, DatasetConfig, TrainingConfig
+"""
+Available autowrap policy from torch 2.4.0
+__all__ = [
+    "always_wrap_policy",
+    "lambda_auto_wrap_policy",
+    "transformer_auto_wrap_policy",
+    "size_based_auto_wrap_policy",
+    "enable_wrap",
+    "wrap",
+    "CustomPolicy",
+    "ModuleWrapPolicy",
+]
+"""
+
+from core.models.GI_01.main.config import ModelConfig, DatasetConfig, TrainingConfig
 from core.dataloaders.dataloader import load_tokenizer
+
+
+from tqdm import tqdm
+from pathlib import Path
+from typing import Optional, Dict, Any
+
+
+# import torch.distributed as dist
+# import torch.multiprocessing as mp
+# from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
+# from torch.distributed.fsdp.fully_sharded_data_parallel import (
+#     ShardingStrategy,
+#     MixedPrecision
+# )
+# from torch.distributed.fsdp.wrap import transformer_auto_wrap_policy
+
 
 ## Initialize configurations
 model_config = ModelConfig(model_name="Construe",
@@ -20,5 +50,4 @@ training_config = TrainingConfig(tokenizer_path="/root/AI-Uncomplicated/core/tok
 ## Load model and tokenizer
 
 tokenizer =  load_tokenizer(training_config.tokenizer_path)
-
 
