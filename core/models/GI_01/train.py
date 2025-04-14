@@ -13,6 +13,8 @@ __all__ = [
 """
 
 import os
+import sys
+sys.path.append('/workspace/AI-Uncomplicated')
 import time
 import torch
 import math
@@ -368,7 +370,7 @@ if __name__ == "__main__":
 
     dataset_config = DatasetConfig(dataset_path=".artifacts/dataset",
                                    dataset_shuffle=True, batch_size=2)
-    training_config = TrainingConfig(tokenizer_path="/root/AI-Uncomplicated/core/models/GI_01/artifacts/tokenzier/en_fr_combined_tokenizer",
+    training_config = TrainingConfig(tokenizer_path="/workspace/AI-Uncomplicated/core/models/GI_01/tokenzier/en_fr_combined_tokenizer/",
                                      warm_up=4000,
                                      logging_steps=747)
 
