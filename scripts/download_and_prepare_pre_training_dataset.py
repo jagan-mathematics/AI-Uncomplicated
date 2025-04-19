@@ -39,15 +39,14 @@ def main(args):
         revision=args.revision
     )
 
-    out_dir = f"{src_dir}_shuffled"
+    out_dir = args.output_dir
     os.makedirs(out_dir, exist_ok=True)
     work_dir = src_dir  # Directory of this Python file
-    prefix = f"{args.dataset}.chunk."
+    dataset_name = args.dataset.split("/", 1)[0]
+    prefix = f"{dataset_name}.chunk."
 
     sample_file = get_sample_file(work_dir)
     orig_extension = get_extension(sample_file)
-
-    allow_patterns = ""
 
     is_parquet = False
     if "parquet" in orig_extension:
@@ -63,15 +62,16 @@ def main(args):
     k_validation = 10000
 
     if is_parquet:
+        print("Running parquet to jsonl.....")
         parquet_to_jsonl(args.dataset, work_dir, src_dir, src_dir)
 
     terashuf_dir = setup_terashuf(work_dir)
     os.environ["MEMORY"] = f"{args.memory}"
     os.environ["SEED"] = f"{args.seed}"
 
-    execute_terashuf(terashuf_dir, src_dir, orig_extension, cat_command, args.nchunks, out_dir, suffix, prefix)
+    execute_terashuf(terashuf_dir, str(src_dir), orig_extension, cat_command, args.nchunks, str(out_dir), suffix, prefix)
 
-    validation_file = f"{out_dir}/{args.dataset}.val{suffix}"
+    validation_file = f"{out_dir}/{dataset_name}.val{suffix}"
     for i in range(args.nchunks):
         chunk_file = f"{out_dir}/{prefix}{i:02d}{suffix}"
         run_command(f"head -n {k_validation} {chunk_file} >> {validation_file}")
@@ -91,6 +91,7 @@ if __name__ == "__main__":
     parser.add_argument("--data_dir", type=str, default="data")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--nchunks", type=int, default=32)
+    parser.add_argument("--output_dir", type=str, default="data")
 
     args = parser.parse_args()
 
