@@ -11,7 +11,7 @@ from datasets import load_dataset
 from typing import Optional, Dict, Any
 
 from core.configurations.base import BaseConfiguration
-from core.dataloaders.dataloader import dataloader_v1, load_tokenizer
+from core.trainer.dataloader import dataloader_v1, load_tokenizer
 from core.models.model import LLM
 
 run = wandb.init()# Init wandb

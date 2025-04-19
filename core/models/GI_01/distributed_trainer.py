@@ -4,13 +4,10 @@ import os
 from typing import List, Optional
 import torch
 import torch.distributed as dist
-from torch import nn
-import torch.nn.functional as F
 from torch.distributed.fsdp import (
     FullyShardedDataParallel as FSDP
 )
 import numbers
-
 from torch.distributed.fsdp.wrap import (
     transformer_auto_wrap_policy,
     size_based_auto_wrap_policy,
@@ -18,12 +15,11 @@ from torch.distributed.fsdp.wrap import (
     wrap,
 )
 
-from core.dataloaders.dataloader import create_data_loader
 from core.models.GI_01.main.config import DatasetConfig, ModelConfig, TrainingConfig
 from core.models.GI_01.main.model import ConstrueAutoRegressiveModel
 from core.models.GI_01.main.decoder import ConstrueDecoderLayer
 from core.tokenizer.tokenizer_loader import SPMTokenizer
-from core.models.GI_01.main.data_loader import EntoPTDataSet, create_data_loader, NextTokenPredictionCollator
+from core.models.GI_01.main.data_loader import EntoPTDataSet, NextTokenPredictionCollator
 
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data import Dataset, DataLoader

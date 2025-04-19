@@ -1,13 +1,69 @@
 """
 Data Loader Module
 """
-from typing import Callable, Optional
+from dataclasses import field, dataclass
+from typing import Callable, Optional, Dict, Any, TypedDict
 import torch
 from torch.utils.data.sampler import RandomSampler, SequentialSampler
 
 from core.configurations.base import BaseConfiguration
 import sentencepiece as spm
 from torch.utils.data import Dataset, DataLoader
+
+from core.tokenizer.tokenizer_loader import TokenizerArgs
+
+
+class PrefetchState(TypedDict):
+    """Represents the current state of a prefetching iterator.
+
+    Attributes:
+        prefetch_buffer: numpy array to store prefetched data
+        seq_idx: int index of the current sequence to resume from
+        rng_state: dict numpy bit generator state used to resume rng
+    """
+
+    it_state: Any
+    seq_idx: int
+    rng_state: Dict[str, Any]
+    prefetch_size: int
+    batch_size: int
+
+@dataclass
+class DataArgs:
+    root_dir: Optional[str] = None
+    sources: Dict[str, float] = field(default_factory=dict)
+    batch_size: int = 2
+    seq_len: int = 2048
+    n_views: int = 2
+    seed: int = 42
+    add_bos: bool = True
+    add_eos: bool = True
+    load_async: bool = True
+    prefetch_size: int = 64
+    tokenizer: TokenizerArgs = field(default_factory=TokenizerArgs)
+
+
+
+def init_dataloader_state_from_args(
+    args: DataArgs,
+    rank: int,
+    world_size: int,
+):
+    return init_state(
+        root_dir=args.root_dir,
+        sources=args.sources,
+        seq_len=args.seq_len,
+        batch_size=args.batch_size,
+        prefetch_size=args.prefetch_size,
+        n_views=args.n_views,
+        seed=args.seed,
+        rank=rank,
+        world_size=world_size,
+        tokenizer_name=args.tokenizer.name,
+        tokenizer_path=args.tokenizer.path,
+        add_bos=args.add_bos,
+        add_eos=args.add_eos,
+    )
 
 class CustomDataset(Dataset):
     def __init__(self, token_ids, config: BaseConfiguration):
