@@ -1,12 +1,18 @@
 """
 Data Loader Module
+
+taken from : https://github.com/facebookresearch/lingua/blob/main/lingua/data.py#L245
+
+Added FIM process along with that
 """
+from asyncio import Queue
 import contextlib
 from copy import deepcopy
 import functools
-import sys
-
-sys.path.append('/workspace/AI-Uncomplicated')
+from multiprocessing import Process
+from multiprocessing import Process, Queue, Event
+from queue import Full, Empty
+from multiprocessing.synchronize import Event as EventClass
 
 import json
 from functools import partial
@@ -25,6 +31,9 @@ from torch.utils.data import Dataset, DataLoader
 
 from core.tokenizer.tokenizer_loader import SPMTokenizer, TokenizerArgs
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 class JSONLState(TypedDict):
     """Represents the current state of a JSON line reader.
@@ -426,30 +435,42 @@ def apply_fill_in_sampling(tokens):
 
 
 def split_by_end_token(tokens, start_token_idx=0, end_token_idx=1):
-    """Split tokens into chunks based on end token using NumPy."""
-    # Find positions of end tokens
+    """More robust implementation that handles sequences not starting with start token."""
+    # Find positions of all tokens
     end_positions = np.where(tokens == end_token_idx)[0]
-
-    # Find positions of start tokens
     start_positions = np.where(tokens == start_token_idx)[0]
-
+    if len(end_positions) == 0:
+        # No end tokens found, return entire sequence as one chunk
+        return [tokens]
     chunks = []
-    prev_end = -1
-
-    # Process complete chunks (those with both start and end tokens)
-    for start_pos in start_positions:
-        # Find the next end token after this start token
-        next_ends = end_positions[end_positions > start_pos]
-        if len(next_ends) > 0:
-            end_pos = next_ends[0]
-            chunks.append(tokens[start_pos:end_pos+1])
-            prev_end = end_pos
-
-    # Add any remaining tokens after the last end token
-    if prev_end < len(tokens) - 1:
-        if prev_end + 1 < len(tokens) and tokens[prev_end + 1] == start_token_idx:
-            chunks.append(tokens[prev_end+1:])
-
+    chunk_start = 0  # Initialize to beginning of sequence
+    # Handle tokens before the first explicit start token
+    if len(start_positions) == 0 or start_positions[0] > 0:
+        # Find the first end token
+        first_end = end_positions[0] if len(end_positions) > 0 else len(tokens)
+        # If there are tokens before the first end token
+        if first_end > 0:
+            chunks.append(tokens[:first_end + 1])
+            chunk_start = first_end + 1
+    # Process remaining chunks
+    for i, end_pos in enumerate(end_positions):
+        # Find preceding start token for this end token
+        preceding_starts = start_positions[start_positions < end_pos]
+        if len(preceding_starts) > 0:
+            # Get the closest start token
+            closest_start = preceding_starts[-1]
+            # Ensure we don't duplicate chunks or skip tokens
+            if closest_start >= chunk_start:
+                chunks.append(tokens[closest_start:end_pos + 1])
+                chunk_start = end_pos + 1
+        # If there's no start token before this end token but we're not at the beginning
+        elif chunk_start <= end_pos:
+            # Include all tokens from previous position to this end token
+            chunks.append(tokens[chunk_start:end_pos + 1])
+            chunk_start = end_pos + 1
+    # Handle any remaining tokens after the last end token
+    if chunk_start < len(tokens):
+        chunks.append(tokens[chunk_start:])
     return chunks
 
 def pack_tokens(
@@ -524,10 +545,10 @@ def pack_tokens(
                 if do_fim:
                     document_tokens = split_by_end_token(out, start_token_idx=1, end_token_idx=2)
                     processed_documents = []
-                    for tokens in document_tokens:
+                    for chunk in document_tokens:
                         if do_fim and rng.binomial(1, fim_rate):
-                            tokens = apply_fim(tokens[1:-1], tokenizer, rng, truncate=True)
-                        processed_documents.append(tokens)
+                            chunk = apply_fim(chunk, tokenizer, rng, truncate=True)
+                        processed_documents.append(chunk)
                     out = np.concatenate(processed_documents)
 
                 assert out.ndim == 1, "Iterator should return 1D sequences"
@@ -641,6 +662,16 @@ def get_fim_token_ids(tokenizer):
     return suffix_tok_id, prefix_tok_id, middle_tok_id
 
 def apply_fim(tokens, tokenizer, rng, truncate=False):
+    add_st = False
+    add_et = False
+    if tokens[0] == tokenizer.start_token_idx:
+        tokens = tokens[1:]
+        add_st = True
+
+    if tokens[-1] == tokenizer.end_token_idx:
+        tokens = tokens[:-1]
+        add_et = True
+
     boundaries = list(rng.integers(low=0, high=len(tokens) + 1, size=2))
     boundaries.sort()
 
@@ -653,13 +684,15 @@ def apply_fim(tokens, tokenizer, rng, truncate=False):
         diff = new_length - len(tokens)
         if diff > 0:
             if suffix.shape[0] <= diff:
-                tokens = np.concatenate(
-                    [
-                        [tokenizer.start_token_idx],
-                        tokens
-                        [tokenizer.end_token_idx]
-                    ]
-                )
+
+                tokens_carrier = []
+                if add_st:
+                    tokens_carrier.append([tokenizer.start_token_idx])
+                tokens_carrier.append(tokens)
+                if add_et:
+                    tokens_carrier.append( [tokenizer.end_token_idx])
+                tokens = np.concatenate(tokens_carrier)
+
                 return tokens
             suffix = suffix[: suffix.shape[0] - diff]
         elif diff < 0:
@@ -671,18 +704,19 @@ def apply_fim(tokens, tokenizer, rng, truncate=False):
     middle_tok_id,
     ) = get_fim_token_ids(tokenizer)
 
-    tokens = np.concatenate(
-        [
-            [tokenizer.start_token_idx],
-            [prefix_tok_id],
+    tokens_carrier = []
+    if add_st:
+        tokens_carrier.append([tokenizer.start_token_idx])
+
+    tokens_carrier.extend([[prefix_tok_id],
             prefix,
             [suffix_tok_id],
             suffix,
             [middle_tok_id],
-            middle,
-            [tokenizer.end_token_idx]
-        ]
-    )
+            middle])
+    if add_et:
+        tokens_carrier.append( [tokenizer.end_token_idx])
+    tokens = np.concatenate(tokens_carrier)
     return tokens
 
 def tokenize(
@@ -720,7 +754,7 @@ def tokenize(
         # tokens = tokenizer.encode(text, add_bos=add_bos, add_eos=add_eos)
 
         if do_fim and rng.binomial(1, fim_rate):
-            tokens = tokenizer.encode(text, add_special_tokens=False, return_type=None)["input_ids"][0]
+            tokens = tokenizer.encode(text, add_special_tokens=True, return_type=None)["input_ids"][0]
             tokens = apply_fim(tokens, tokenizer, rng)
         else:
             tokens = tokenizer.encode(text, add_special_tokens=True, return_type=None)["input_ids"][0]
@@ -786,16 +820,81 @@ def build_dataloader(
     data_it.close()
 
 
+def feed_buffer(queue: Queue, stop_event: EventClass, iterator_builder):
+    """
+    Producer function to fetch data from an iterable dataset and put it into a queue.
+    Incorporates timeout management to avoid hanging on queue.put() when the queue is full.
+    """
+    with iterator_builder() as iterator:
+        for item in iterator:
+            while not stop_event.is_set():
+                try:
+                    queue.put(
+                        item, timeout=0.1
+                    )  # Attempts to put item into the queue with a timeout
+                    break  # On successful put, breaks out of the while loop
+                except Full:
+                    pass
+            if stop_event.is_set():
+                break
+
+
+def consume_buffer(producer: Process, queue: Queue):
+    """
+    Consumer function to process items from the queue.
+    Handles cases where the queue might be empty by implementing timeouts on queue.get().
+    """
+    while producer.exitcode is None:
+        try:
+            item = queue.get(
+                timeout=0.1
+            )  # Tries to get an item from the queue with a timeout
+            yield item
+        except Empty:
+            pass
+
+    raise RuntimeError(
+        "Data loader quit unexpectedly, real error has been raised previously"
+    )
+
+
+@contextlib.contextmanager
+def async_iterator(buffer_size: int, iterator_builder):
+    """
+    Context manager to setup and manage asynchronous iteration with producer-consumer model.
+    """
+    queue = Queue(maxsize=buffer_size)
+    stop_event = Event()
+    producer = Process(target=feed_buffer, args=(queue, stop_event, iterator_builder))
+    logger.info("Async dataloader started")
+    producer.start()
+
+    consumer = consume_buffer(producer, queue)
+    try:
+        yield consumer
+    finally:
+        stop_event.set()  # Ensures the stop event is signaled
+        consumer.close()
+        producer.join(timeout=0.2)  # Waits for the producer to finish
+        if producer.exitcode is None:
+            logger.info(f"Killing async data process {producer.pid} ...")
+            producer.kill()
+        else:
+            logger.info(
+                f"Async data process {producer.pid} exited with code {producer.exitcode}"
+            )
+        logger.info("Async dataloader cleaned up")
+
 
 def build_dataloader_from_args(
     args: DataArgs,
     state: Optional[PrefetchState] = None,
 ):
     data_builder = partial(build_dataloader, state, args.fim_type)
-    # if args.load_async:
-    #     return async_iterator(args.prefetch_size, data_builder)
-    # else:
-    return data_builder()
+    if args.load_async:
+        return async_iterator(args.prefetch_size, data_builder)
+    else:
+        return data_builder()
 
 
 
