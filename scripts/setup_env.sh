@@ -72,6 +72,7 @@ conda activate $env_prefix
 conda install git -y
 
 # Install packages
+pip install torch==2.5.0 xformers --index-url https://download.pytorch.org/whl/cu121
 pip install ninja
 pip install --requirement requirements-dev.txt
 pip install --requirement requirements-ci.txt
