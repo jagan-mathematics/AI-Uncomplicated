@@ -15,11 +15,7 @@ from xformers.profiler import (
     PyTorchProfiler,
 )
 
-<<<<<<< Updated upstream
-from lingua.distributed import get_is_master
-=======
 from core.trainer.distributed import get_is_master
->>>>>>> Stashed changes
 
 import wandb
 

@@ -21,6 +21,7 @@ import json
 from functools import partial
 import os
 from pathlib import Path
+import re
 
 import numpy as np
 from dataclasses import field, dataclass
@@ -111,8 +112,8 @@ class DataArgs:
     add_eos: bool = True
     load_async: bool = True
     prefetch_size: int = 64
-    fim_rate: int = 0.0
-    fim_type: str = None
+    fim_rate: float = 0.0
+    fim_type: str = "content"
     tokenizer: TokenizerArgs = field(default_factory=TokenizerArgs)
 
 
@@ -544,9 +545,8 @@ def pack_tokens(
 
             if len(buffer) == buffer_size:
                 out = np.array(buffer)
-
                 if do_fim:
-                    document_tokens = split_by_end_token(out, start_token_idx=1, end_token_idx=2)
+                    document_tokens = split_by_end_token(out, start_token_idx=tokenizer.start_token_idx, end_token_idx=tokenizer.end_token_idx)
                     processed_documents = []
                     for chunk in document_tokens:
                         if do_fim and rng.binomial(1, fim_rate):
@@ -616,7 +616,14 @@ def batch_and_shuffle_prefetched_sequences(
     _it_state = state["it_state"]
 
     for i in range(prefetch_size * batch_size):
-        prefetch_buffer[i], next_it_state = next(data_loader)
+        sample, next_it_state = next(data_loader)
+
+
+        if sample.shape != (seq_len, n_views):
+            raise ValueError(f"Sample at index {i} has shape {sample.shape}, expected ({seq_len}, {n_views})")
+
+        prefetch_buffer[i] = sample
+
     rng.shuffle(prefetch_buffer, axis=0)
     for i in range(seq_idx * batch_size):
         prefetch_buffer[i], _ = next(data_loader)
@@ -667,6 +674,8 @@ def get_fim_token_ids(tokenizer):
 def apply_fim(tokens, tokenizer, rng, truncate=False):
     add_st = False
     add_et = False
+    if len(tokens) < 3:
+        return tokens
     if tokens[0] == tokenizer.start_token_idx:
         tokens = tokens[1:]
         add_st = True
@@ -754,6 +763,8 @@ def tokenize(
         ), "JSON line must contain either text or content key"
         content_key = "text" if ("text" in content) else "content"
         text = content[content_key]
+        # fall back process to remove special token before tokenizer
+        text = re.sub("<s>|<\/s>", "", text)
         # tokens = tokenizer.encode(text, add_bos=add_bos, add_eos=add_eos)
 
         if do_fim and rng.binomial(1, fim_rate):
@@ -1008,10 +1019,11 @@ if __name__ == "__main__":
                     sources={"TigerResearch": 1.0},
                     tokenizer=TokenizerArgs(name="GI01-tokenizer-v0.1-en", path="/workspace/AI-Uncomplicated/artifact/tokenizer"),
                     fim_rate=1.0,
-                    fim_type="content")
+                    fim_type="document")
     states = init_dataloader_state_from_args(args, 1, 2)
     dataloader = build_dataloader_from_args(args, states)
     with dataloader as loader:
         for data in loader:
-            print(data)
-            break
+            # print(data)
+            # break
+            pass

@@ -4,9 +4,9 @@ seed: 12
 grad_acc_steps: 1
 gc_collect_freq: 1000
 probe_freq: null
-steps: 1000
+steps: 3000
 data:
-  root_dir: /workspace/artifact/pretraining_data/
+  root_dir: /workspace/AI-Uncomplicated/artifact/pretraining_data/
   sources:
     TigerResearch: 100.0
   batch_size: 32
@@ -17,11 +17,11 @@ data:
   add_eos: true
   load_async: true
   prefetch_size: 64
-  fim_rate: 0
-  fim_type: content
+  fim_rate: 0.1
+  fim_type: document
   tokenizer:
-    name: sp
-    path: /workspace/artifact/tokenizer/GI01-tokenizer-v0.1-en/spm_buffer.model
+    name: GI01-tokenizer-v0.1-en
+    path: /workspace/AI-Uncomplicated/artifact/tokenizer
 optim:
   lr: 0.0003
   weight_decay: 0.1
@@ -39,9 +39,9 @@ optim:
   exp_factor: 0.5
 model:
   dim: 1024
-  n_layers: 8
+  n_layers: 16
   head_dim: null
-  n_heads: 8
+  n_heads: 16
   n_kv_heads: null
   ffn_dim_multiplier: null
   multiple_of: 256
@@ -57,7 +57,7 @@ model:
   mask: causal
   sliding_window: null
 distributed:
-  dp_shard: 4
+  dp_shard: 2
   dp_replicate: 1
   tp_size: 1
   selective_activation_checkpointing: false
@@ -80,25 +80,47 @@ env:
   NCCL_DEBUG: INFO
   TORCH_NCCL_ASYNC_ERROR_HANDLING: '1'
 checkpoint:
-  dump:
+  save_every:
     every: 1000
-    keep: 0
-  eval:
+    limit: 0
+  eval_every:
     every: 1000
-    keep: 0
-  path: /workspace/AI-Uncomplicated/checkpoints
+    limit: 0
+  path: /workspace/AI-Uncomplicated/
   init_ckpt_path: null
   continue_training_from_init: false
 profiling:
-  run: false
+  run: true
   trace_folder: profiling
   mem_warmup: 100
   mem_steps: 2
   profile_warmup: 102
   profile_steps: 2
 logging:
-  freq: 10
+  freq: 1
   acc_freq: null
-  wandb: null
+  wandb:
+    job_type: null
+    dir: /workspace/AI-Uncomplicated/wandb/
+    project: Pretrain
+    entity: vipinsaravana
+    tags: null
+    group: null
+    name: debug
+    notes: null
+    config_exclude_keys: null
+    config_include_keys: null
+    anonymous: null
+    mode: null
+    allow_val_change: null
+    resume: null
+    force: null
+    tensorboard: null
+    sync_tensorboard: null
+    monitor_gym: null
+    save_code: null
+    id: null
+    fork_from: null
+    resume_from: null
 async_eval_gpus: null
 eval: null

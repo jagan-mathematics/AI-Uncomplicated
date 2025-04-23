@@ -95,6 +95,9 @@ class SentencePieceTokenizer(Tokenizer):
         )
         assert self.sp_model.vocab_size() == self.sp_model.get_piece_size()
 
+    def vocab_size(self):
+        return self.n_words
+
     def encode(self, s: str, add_bos: bool, add_eos: bool):
         assert type(s) is str
         tokens = (

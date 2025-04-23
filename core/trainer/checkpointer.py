@@ -1,7 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # This software may be used and distributed according to the terms of the Llama 2 Community License Agreement.
 
-from dataclasses import field
+from dataclasses import field, dataclass
 import json
 import os
 from pathlib import Path
@@ -11,6 +11,8 @@ from omegaconf import OmegaConf
 import torch.distributed as dist
 from torch.distributed._tensor import DeviceMesh
 import torch
+from core.trainer.distributed import get_is_master
+
 
 import torch.nn as nn
 
@@ -41,21 +43,52 @@ TRAIN_STATE_NAME = "train_state_{:05d}.json"
 RE_DIGIT = r"\d+"
 
 
+# @dataclass
+# class SaveEvery:
+#     every: int = 1000
+#     keep: int = 0
+
+
+# @dataclass
+# class CheckpointArgs:
+#     dump: SaveEvery = field(default_factory=SaveEvery)
+#     eval: SaveEvery = field(default_factory=SaveEvery)
+#     path: Optional[str] = None
+#     init_ckpt_path: Optional[str] = None
+#     continue_training_from_init: bool = False
+
+
+@dataclass
 class SaveEvery:
-    steps: int = 1000
+    every: int = 1000
     limit: int = 0
 
 
+@dataclass
 class CheckpointArgs:
+    save_every: SaveEvery = field(default_factory=SaveEvery)
+    eval_every: SaveEvery = field(default_factory=SaveEvery)
     path: Optional[str] = None
-    save_every: int = field(default_factory=SaveEvery)
-    eval_every: int = field(default_factory=SaveEvery)
-    init_checkpoint_path: Optional[str] = None
+    init_ckpt_path: Optional[str] = None
     continue_training_from_init: bool = False
 
 
 def _get_key_step(name: str):
     return int(re.findall(RE_DIGIT, name)[-1])
+
+def load_from_checkpoint(ckpt_dir: str, model: nn.Module, optimizer: Optional[torch.optim.Optimizer] = None, model_key: str = "model", optim_key: str = "optim"):
+    if not (Path(ckpt_dir) / '.metadata').exists():
+        raise ValueError(f"Please convert the checkpoint distcp format using `torch.distributed.checkpoint.format_utils.torch_save_to_dcp` before loading it")
+
+    state_dict = {}
+    if optimizer is not None:
+        state_dict[model_key], state_dict[optim_key] = get_state_dict(model, optimizer)
+    else:
+        state_dict[model_key] = get_model_state_dict(model)
+        if model_key == "": # If only loading a model directly, the key should be empty
+            state_dict = state_dict.pop(model_key)
+
+    dcp.load(state_dict, checkpoint_id=ckpt_dir)
 
 
 class CheckpointManager:

@@ -49,7 +49,7 @@ from core.trainer.distributed import (
     check_model_value_range,
 )
 from core.trainer.args import dataclass_from_dict, dump_config, flatten_dict
-from core.trainer.checkpoint import CheckpointArgs, CheckpointManager, load_from_checkpoint
+from core.trainer.checkpointer import CheckpointArgs, CheckpointManager, load_from_checkpoint
 from core.trainer.dataloader import (
     DataArgs,
     PackTokensState,
@@ -65,7 +65,7 @@ from core.trainer.metrics import (
 )
 from core.trainer.optim import OptimArgs, build_optimizer
 from core.trainer.profiling import ProfilerArgs, maybe_run_profiler
-from core.trainer.tokenizer import build_tokenizer
+from core.trainer.dataloader import build_tokenizer
 from core.trainer.transformer import (
     LMMTPArgs,
     LMTransformer,
@@ -231,9 +231,13 @@ def every_n_steps(train_state, freq, acc_step=None, acc_freq=None):
 def train(args: TrainArgs):
     with ExitStack() as context_stack:
         tokenizer = build_tokenizer(args.data.tokenizer.name, args.data.tokenizer.path)
+
+        n_words = tokenizer.vocab_size
+        print(f"========Num words is {n_words}=======")
+
         validate_train_args(
             args,
-            tokenizer.n_words,
+            n_words,
         )
         if get_is_master():
             os.makedirs(args.dump_dir, exist_ok=True)
@@ -543,8 +547,8 @@ def train(args: TrainArgs):
 
             saved = False
             if every_n_steps(
-                train_state, args.checkpoint.dump.every, acc_step=0
-            ) or every_n_steps(train_state, args.checkpoint.eval.every, acc_step=0):
+                train_state, args.checkpoint.save_every.every, acc_step=0
+            ) or every_n_steps(train_state, args.checkpoint.eval_every.every, acc_step=0):
                 saved = checkpoint.save(
                     model,
                     optimizer,
@@ -554,7 +558,7 @@ def train(args: TrainArgs):
                 )
 
             if args.eval is not None and every_n_steps(
-                train_state, args.checkpoint.eval.every, acc_step=0
+                train_state, args.checkpoint.eval_every.every, acc_step=0
             ):
                 from apps.mtp.eval import (
                     launch_eval,
@@ -656,21 +660,16 @@ def main():
     """
     cli_args = OmegaConf.from_cli()
     file_cfg = OmegaConf.load(cli_args.config)
+    print(file_cfg)
     # We remove 'config' attribute from config as the underlying DataClass does not have it
     del cli_args.config
 
-    print(f"=====")
-    print(TrainArgs())
-    print(f"=====")
-
     default_cfg = OmegaConf.structured(TrainArgs())
-
-    print(f"=====")
-    print(default_cfg)
-    print(f"=====")
 
     cfg = OmegaConf.merge(default_cfg, file_cfg, cli_args)
     cfg = OmegaConf.to_object(cfg)
+
+    print(cfg)
 
     train(cfg)
 

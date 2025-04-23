@@ -8,6 +8,7 @@ from typing import Dict, Any, List, Optional, Union
 from pathlib import Path
 import json
 from datetime import datetime, timezone
+from core.trainer.distributed import get_is_master
 
 import torch
 import torch.nn as nn
