@@ -71,6 +71,7 @@ dependencies = [
     { name = "uv" },
     { name = "viztracer" },
     { name = "wandb" },
+    { name = "xformers" },
 ]
 
 [package.dev-dependencies]
@@ -112,6 +113,7 @@ requires-dist = [
     { name = "uv", specifier = ">=0.5.11" },
     { name = "viztracer", specifier = ">=1.0.0" },
     { name = "wandb", specifier = ">=0.19.1" },
+    { name = "xformers", specifier = ">=0.0.28.post2" },
 ]
 
 [package.metadata.requires-dev]
@@ -2925,6 +2927,20 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/4f/bf/e2aa032cea63737cbabd4069c86d6aa4ba075ee19c44a165e1362a5b403b/wrapt-1.17.1-cp313-cp313t-win32.whl", hash = "sha256:52f0907287d9104112dbebda46af4db0793fcc4c64c8a867099212d116b6db64", size = 37987 },
     { url = "https://files.pythonhosted.org/packages/77/fb/439f032c1b52a1750c304ff85253edfec3a50d4e39fa9a338ab0f837acb4/wrapt-1.17.1-cp313-cp313t-win_amd64.whl", hash = "sha256:7966f98fa36933333d8a1c3d8552aa3d0735001901a4aabcfbd5a502b4ef14fe", size = 40751 },
     { url = "https://files.pythonhosted.org/packages/94/47/299f204e352655c117b9dec03fc585866df7eea72660515208ec67c185c4/wrapt-1.17.1-py3-none-any.whl", hash = "sha256:f3117feb1fc479eaf84b549d3f229d5d2abdb823f003bc2a1c6dd70072912fa0", size = 23589 },
+]
+
+[[package]]
+name = "xformers"
+version = "0.0.28.post2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/88/05/52bff6efbedce1d5f5cff3676fbbd320ad67a206b9180b5092820c794d12/xformers-0.0.28.post2.tar.gz", hash = "sha256:805c91b19e81958bf05b0daf48962eb44a83b9d696a5ab3ef348368af14aad37", size = 7758835 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9c/c3/d77ebefcc89ac8e79b90e3b728348b3e3b0f124748a390648f4b571067a9/xformers-0.0.28.post2-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:27c005f154c2e2badb6d3f06608a1fa236768ada25751a2b80a9ca027d88d871", size = 16717350 },
+    { url = "https://files.pythonhosted.org/packages/f8/29/6249cf020247d1213cce27e7bf83d466d3be4c1403dbe583d8f6e11ede46/xformers-0.0.28.post2-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:1299cb2ce567c68b1ed2f3553ae903669800e07ad76fe7748f01879ee426feb9", size = 16715709 },
 ]
 
 [[package]]

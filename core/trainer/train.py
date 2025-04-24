@@ -74,6 +74,9 @@ from core.trainer.transformer import (
 )
 from core.trainer.probe import AutoProbeD
 from core.trainer.stool import StoolArgs, launch_job
+from core.models.GI_01.main.model import ConstrueModel
+from core.configurations.base import BaseConfiguration
+
 
 import wandb
 
@@ -266,7 +269,16 @@ def train(args: TrainArgs):
 
         # Initializing Model in meta device allows us to initialize models much bigger than 1 gpu's memory
         with torch.device("meta"):
-            model = LMTransformer(args.model)
+            # model = LMTransformer(args.model)
+            config = BaseConfiguration(model_name="small_lm", num_layers=2, hidden_dim=128, intermediate_dim=512,
+                               max_positions=256, vocabulary_size=64000, num_heads=2, attention_dropout=0.05,
+                               batch_size=8, weight_decay=0.01,
+                               learning_rate=5e-4,
+                               tokenizer_path="/workspace/vipin_g6/personal/pretraining/english_tokenizer/english_tokenizer.model",
+                               dataset_batch_size=16, dataset_shuffle=True, num_epochs=2, eval_frequency=1,
+                               eval_iter=10,
+                               model_max_sequence=256)
+            model = ConstrueModel(config)
         logger.info(f"Model is built !")
 
         model_param_count = get_num_params(model)
