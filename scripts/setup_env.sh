@@ -72,7 +72,7 @@ conda activate $env_prefix
 conda install git -y
 
 # Install packages
-pip install --requirement requirements-dev.txt --index-url https://download.pytorch.org/whl/cu121
+pip install --requirement requirements-dev.txt
 pip install --requirement requirements-ci.txt
 pip install ninja
 pre-commit install

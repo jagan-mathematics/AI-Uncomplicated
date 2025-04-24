@@ -31,7 +31,7 @@ dependencies = [
     "tensorflow-datasets>=4.9.7",
     "tiktoken>=0.8.0",
     "tokenizers>=0.21.0",
-    "torch==2.5.0",
+    "torch>=2.5.0",
     "tqdm~=4.67.0",
     "transformers>=4.47.1",
     "uv>=0.5.11",
