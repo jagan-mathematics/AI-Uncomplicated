@@ -1,0 +1,135 @@
+name: debug
+dump_dir: /workspace/AI-Uncomplicated/artifacts/runs/GI-01-kickstart-0.1
+seed: 12
+grad_acc_steps: 1
+gc_collect_freq: 1000
+probe_freq: null
+steps: 3000
+
+data:
+  root_dir: /workspace/AI-Uncomplicated/artifact/pretraining_data/
+  sources:
+    TigerResearch: 100.0
+  batch_size: 32
+  seq_len: 1024
+  n_views: 2
+  seed: 42
+  add_bos: true
+  add_eos: true
+  load_async: true
+  prefetch_size: 64
+  fim_rate: 0.1
+  fim_type: document
+  tokenizer:
+    name: GI01-tokenizer-v0.1-en
+    path: /workspace/AI-Uncomplicated/artifact/tokenizer
+
+optim:
+  lr: 0.0003
+  weight_decay: 0.1
+  epsilon: 1.0e-08
+  beta1: 0.9
+  beta2: 0.95
+  clip: 10.0
+  scheduler: cosine
+  warmup: 2000
+  lr_min_ratio: 1.0e-06
+  cycle_length: 1.0
+  cosine_theta: 1.0
+  annealing_step: 1000
+  decay_fraction: 0.1
+  exp_factor: 0.5
+
+model:
+  dim: 1024
+  n_layers: 16
+  head_dim: null
+  n_heads: 16
+  n_kv_heads: null
+  ffn_dim_multiplier: null
+  multiple_of: 256
+  norm_eps: 1.0e-05
+  rope_theta: 10000.0
+  init_base_std: null
+  init_std_factor: disabled
+  max_seqlen: 1024
+  seed: 42
+  n_future_head: 1
+  vocab_size: 52000
+  attn_impl: sdpa
+  mask: causal
+  sliding_window: null
+
+distributed:
+  dp_shard: 2
+  dp_replicate: 1
+  tp_size: 1
+  selective_activation_checkpointing: false
+  compile: true
+  fsdp_type: full_shard
+  model_dtype: bf16
+  float8_recipe: null
+  float8_filter: layers\.[0-9]+\.
+  matmul_allow_tf32: false
+  detect_anomaly: false
+  compile_cache_size_limit: 8
+  spawn_method: forkserver
+
+env:
+  MKL_SERVICE_FORCE_INTEL: GNU
+  OMP_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  ENABLE_INTRA_NODE_COMM: '1'
+  TORCH_NCCL_AVOID_RECORD_STREAMS: '1'
+  NCCL_IB_TIMEOUT: '22'
+  NCCL_DEBUG: INFO
+  TORCH_NCCL_ASYNC_ERROR_HANDLING: '1'
+
+checkpoint:
+  save_every:
+    every: 1000
+    limit: 0
+  eval_every:
+    every: 1000
+    limit: 0
+  path: /workspace/AI-Uncomplicated/
+  init_ckpt_path: null
+  continue_training_from_init: false
+
+profiling:
+  run: true
+  trace_folder: profiling
+  mem_warmup: 100
+  mem_steps: 2
+  profile_warmup: 102
+  profile_steps: 2
+
+logging:
+  freq: 1
+  acc_freq: null
+  wandb:
+    job_type: null
+    dir: /workspace/AI-Uncomplicated/wandb/
+    project: Pretrain
+    entity: vipinsaravana
+    tags: null
+    group: null
+    name: debug
+    notes: null
+    config_exclude_keys: null
+    config_include_keys: null
+    anonymous: null
+    mode: null
+    allow_val_change: null
+    resume: null
+    force: null
+    tensorboard: null
+    sync_tensorboard: null
+    monitor_gym: null
+    save_code: null
+    id: null
+    fork_from: null
+    resume_from: null
+
+async_eval_gpus: null
+eval: null
