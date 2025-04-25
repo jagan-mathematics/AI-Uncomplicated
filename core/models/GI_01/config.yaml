@@ -41,24 +41,23 @@ optim:
   exp_factor: 0.5
 
 model:
-  dim: 1024
-  n_layers: 16
+  name: null
+  num_layers: 16
+  padding_id: 0
+  hidden_dim: 1024
+  intermediate_dim: 3072
+  max_positions: 2048
+  vocabulary_size: -1
+  layer_norm_eps: 1.0e-05
+  max_seq_len: 2048
+  num_heads: 16
+  attention_dropout: 0.0
   head_dim: null
-  n_heads: 16
-  n_kv_heads: null
-  ffn_dim_multiplier: null
-  multiple_of: 256
-  norm_eps: 1.0e-05
-  rope_theta: 10000.0
-  init_base_std: null
-  init_std_factor: disabled
-  max_seqlen: 1024
+  use_rope: true
+  rope_base: 10000.0
+  output_last_hidden_state: false
   seed: 42
-  n_future_head: 1
-  vocab_size: 52000
-  attn_impl: sdpa
-  mask: causal
-  sliding_window: null
+
 
 distributed:
   dp_shard: 2
@@ -74,6 +73,7 @@ distributed:
   detect_anomaly: false
   compile_cache_size_limit: 8
   spawn_method: forkserver
+  allow_bf16_reduced_precision_reduction: true
 
 env:
   MKL_SERVICE_FORCE_INTEL: GNU
@@ -92,7 +92,7 @@ checkpoint:
   eval_every:
     every: 1000
     limit: 0
-  path: /workspace/AI-Uncomplicated/
+  path: null
   init_ckpt_path: null
   continue_training_from_init: false
 
@@ -114,7 +114,7 @@ logging:
     entity: vipinsaravana
     tags: null
     group: null
-    name: debug
+    name: null
     notes: null
     config_exclude_keys: null
     config_include_keys: null

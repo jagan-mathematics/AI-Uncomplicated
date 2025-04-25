@@ -59,7 +59,6 @@ class DistributedArgs:
     dp_replicate: int = (
         4  # How many times to replicate the model weight. Typically number of nodes.
     )
-    tp_size: int = 1
     selective_activation_checkpointing: bool = False
     compile: bool = False
     fsdp_type: str = "full_shard" # full_shard
@@ -93,13 +92,12 @@ class EnvironmentArgs:
 
 
 def get_device_mesh(distributed_args: DistributedArgs):
-    tp_size = distributed_args.tp_size
     dp_replicate = distributed_args.dp_replicate
     dp_shard = distributed_args.dp_shard
 
     assert (
-        dp_replicate * dp_shard * tp_size == get_world_size()
-    ), f"dp_replicate * dp_shard * tp_size ({dp_replicate} * {dp_shard} * {tp_size}) != world_size ({get_world_size()})"
+        dp_replicate * dp_shard == get_world_size()
+    ), f"dp_replicate * dp_shard * tp_size ({dp_replicate} * {dp_shard}) != world_size ({get_world_size()})"
 
     dims = []
     names = []
@@ -109,9 +107,7 @@ def get_device_mesh(distributed_args: DistributedArgs):
     if dp_shard > 1 or distributed_args.fsdp_type == "no_shard":
         dims.append(dp_shard)
         names.append("dp_shard")
-    if tp_size > 1:
-        dims.append(tp_size)
-        names.append("tp")
+
     dims = tuple(dims)
     names = tuple(names)
 

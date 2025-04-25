@@ -931,8 +931,6 @@ class CustomDataset(Dataset):
 
 
 def build_tokenizer(name: str, tokenizer_path: str):
-    # sp_model = spm.SentencePieceProcessor(model_file=os.path.join(tokenizer_path, name))
-    # return sp_model
     return SPMTokenizer(os.path.join(tokenizer_path, name))
 
 

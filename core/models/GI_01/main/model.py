@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import torch
 import torch.nn.init
 
@@ -5,9 +7,13 @@ from core.configurations.base import BaseConfiguration
 from core.models.GI_01.main.decoder import ConstrueDecoderLayer
 from core.layers.layer_norm import LayerNorm
 from core.utils.masks import create_causal_mask
-from core.layers.positional_embedding.rope_projector import RopePositionEmbedding
 
 from torch import nn
+
+
+@dataclass
+class GI01ModelArgs(BaseConfiguration):
+    pass
 
 
 class ConstrueModel(nn.Module):
@@ -56,14 +62,14 @@ class ConstrueModel(nn.Module):
                 output_attentions=output_attentions
             )
             if output_hidden_states:
-                layers_hidden_states += (hidden_states, )
+                layers_hidden_states += (hidden_states,)
             if output_attentions:
                 output_attentions_weights += (attention_weight,)
 
         hidden_states = self.final_layer_norm(hidden_states)
 
-        return hidden_states, (output_attentions_weights if output_attentions else None), (layers_hidden_states if output_hidden_states else None)
-
+        return hidden_states, (output_attentions_weights if output_attentions else None), (
+            layers_hidden_states if output_hidden_states else None)
 
 
 class ConstrueAutoRegressiveModel(nn.Module):
@@ -76,7 +82,6 @@ class ConstrueAutoRegressiveModel(nn.Module):
             out_features=config.vocabulary_size,
             bias=False
         )
-
 
     def forward(self, input_ids, attention_mask=None, output_attentions=False, output_hidden_states=False):
         last_hidden_state, output_attention_weights, hidden_states = self.model(input_ids, attention_mask)
