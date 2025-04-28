@@ -3,8 +3,9 @@ from typing import Callable, Dict, Optional
 import torch
 import torch.nn as nn
 
-from core.configurations.base import BaseConfiguration
-from core.trainer.validator import validate_model_initial_states
+from core.layers.norms import RMSNorm
+from core.layers.positional_embedding.rope_projector import RopePositionEmbedding
+
 
 
 def calculate_gelu_gain():
@@ -88,6 +89,10 @@ def get_initializer(
                 nn.init.zeros_(m.bias)
         elif isinstance(m, nn.Embedding) and embedding_init:
             init_embedding_weights(m, embedding_init)
+        elif isinstance(m, RMSNorm):
+            m.init_weights()
+        elif isinstance(m, RopePositionEmbedding):
+            m.init_weights()
 
 
     def kaiming_init(m: nn.Module) -> None:
@@ -100,6 +105,10 @@ def get_initializer(
                 nn.init.zeros_(m.bias)
         elif isinstance(m, nn.Embedding) and embedding_init:
             init_embedding_weights(m, embedding_init)
+        elif isinstance(m, RMSNorm):
+            m.init_weights()
+        elif isinstance(m, RopePositionEmbedding):
+            m.init_weights()
 
     def normal_init(m: nn.Module) -> None:
         if isinstance(m, (nn.Linear, nn.Conv2d)):
@@ -111,6 +120,10 @@ def get_initializer(
                 nn.init.zeros_(m.bias)
         elif isinstance(m, nn.Embedding) and embedding_init:
             init_embedding_weights(m, embedding_init)
+        elif isinstance(m, RMSNorm):
+            m.init_weights()
+        elif isinstance(m, RopePositionEmbedding):
+            m.init_weights()
 
     def uniform_init(m: nn.Module) -> None:
         if isinstance(m, (nn.Linear, nn.Conv2d)):
@@ -122,6 +135,10 @@ def get_initializer(
                 nn.init.zeros_(m.bias)
         elif isinstance(m, nn.Embedding) and embedding_init:
             init_embedding_weights(m, embedding_init)
+        elif isinstance(m, RMSNorm):
+            m.init_weights()
+        elif isinstance(m, RopePositionEmbedding):
+            m.init_weights()
 
     def orthogonal_init(m: nn.Module) -> None:
         if isinstance(m, (nn.Linear, nn.Conv2d)):
@@ -132,6 +149,10 @@ def get_initializer(
                 nn.init.zeros_(m.bias)
         elif isinstance(m, nn.Embedding) and embedding_init:
             init_embedding_weights(m, embedding_init)
+        elif isinstance(m, RMSNorm):
+            m.init_weights()
+        elif isinstance(m, RopePositionEmbedding):
+            m.init_weights()
 
     initializers: Dict[str, Callable] = {
         'xavier': xavier_init,

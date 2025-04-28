@@ -47,7 +47,7 @@ model:
   hidden_dim: 1024
   intermediate_dim: 3072
   max_positions: 2048
-  vocabulary_size: -1
+  vocab_size: -1
   layer_norm_eps: 1.0e-05
   max_seq_len: 2048
   num_heads: 16
@@ -57,12 +57,14 @@ model:
   rope_base: 10000.0
   output_last_hidden_state: false
   seed: 42
+  embedding_init: xavier
+  init_type: xavier
+  activation: gelu
 
 
 distributed:
   dp_shard: 2
   dp_replicate: 1
-  tp_size: 1
   selective_activation_checkpointing: false
   compile: true
   fsdp_type: full_shard
@@ -87,10 +89,10 @@ env:
 
 checkpoint:
   save_every:
-    every: 1000
+    step: 1000
     limit: 0
   eval_every:
-    every: 1000
+    step: 1000
     limit: 0
   path: null
   init_ckpt_path: null

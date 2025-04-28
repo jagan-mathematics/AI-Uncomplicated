@@ -146,7 +146,7 @@ def save_object(obj, filename):
 
 if __name__ == "__main__":
     config = BaseConfiguration(model_name="small_lm", num_layers=2, hidden_dim=128, intermediate_dim=512,
-                               max_positions=256, vocabulary_size=64000, num_heads=2, attention_dropout=0.05,
+                               max_positions=256, vocab_size=64000, num_heads=2, attention_dropout=0.05,
                                batch_size=8, weight_decay=0.01,
                                learning_rate=5e-4,
                                tokenizer_path="/workspace/vipin_g6/personal/pretraining/english_tokenizer/english_tokenizer.model",

@@ -3,8 +3,8 @@
 from torch import nn
 
 from core.configurations.base import BaseConfiguration
-from core.layers.attention import RopeAttention
-from core.layers.layer_norm import LayerNorm
+from core.layers.attention import AttentionBlock, MultiTypeAttentionBlock
+from core.layers.norms import RMSNorm
 from core.layers.point_wise_projection import PointWiseGatedProjection
 
 
@@ -12,18 +12,18 @@ class ConstrueDecoderLayer(nn.Module):
     def __init__(self, base_cfg: BaseConfiguration):
         super().__init__()
 
-        self.input_norm = LayerNorm(model_dimension=base_cfg.hidden_dim)
-        self.self_attn = RopeAttention(
+        self.input_norm = RMSNorm(model_dimension=base_cfg.hidden_dim)
+        self.self_attn = MultiTypeAttentionBlock(
             config=base_cfg
         )
         self.attention_dropout = nn.Dropout(p=base_cfg.attention_dropout)
 
-        self.post_attention_norm = LayerNorm(model_dimension=base_cfg.hidden_dim)
+        self.post_attention_norm = RMSNorm(model_dimension=base_cfg.hidden_dim)
         self.mlp = PointWiseGatedProjection(config=base_cfg)
         self.dropout2 = nn.Dropout(p=base_cfg.attention_dropout)
 
 
-    def forward(self, hidden_state, attention_mask, output_attentions=False):
+    def forward(self, hidden_state, attention_mask, frequency_cis, token_idx=None, attn_impl: str = "sdpa", output_attentions=False):
         """
          https://arxiv.org/pdf/2002.04745 (PRE-Norm)
 
@@ -44,6 +44,9 @@ class ConstrueDecoderLayer(nn.Module):
         hidden_state, self_attn_weights = self.self_attn(
             input_tensor=hidden_state,
             attention_mask=attention_mask,
+            frequency_cis=frequency_cis,
+            token_idx=token_idx,
+            attn_impl=attn_impl,
             output_attentions=output_attentions,
         )
         hidden_state = self.attention_dropout(hidden_state)

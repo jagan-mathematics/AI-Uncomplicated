@@ -67,7 +67,7 @@ class DistributedArgs:
     float8_filter: str = r"layers\.[0-9]+\."
 
     matmul_allow_tf32: bool = False
-    allow_bf16_reduced_precision_reduction = True
+    allow_bf16_reduced_precision_reduction: bool = True
     detect_anomaly: bool = False
 
     compile_cache_size_limit: int = 8
@@ -382,27 +382,14 @@ def clean_env():
 def parallelize_model(
     model,
     device_mesh,
-    model_args,
     distributed_args: DistributedArgs,
     fsdp_grouping_plan: Optional[List[Tuple[str, bool]]] = None,
-    tp_parallelize=None,
     no_recompute_ops=None,
 ):
     if distributed_args.float8_recipe is not None:
         model = convert_linears_to_fp8(
             model, distributed_args.float8_recipe, distributed_args.float8_filter
         )
-
-    if distributed_args.tp_size > 1:
-        assert (
-            distributed_args.fsdp_type == "full_shard"
-        ), "Only full shard is supported for TP parallelism"
-        assert tp_parallelize is not None, "TP plan is required for TP parallelism"
-        assert (
-            distributed_args.compile == False
-        ), "Compile is not supported for TP parallelism"
-
-        tp_parallelize(model, device_mesh["tp"], model_args, distributed_args)
 
     param_dtype = dict(fp32=torch.float32, fp16=torch.float16, bf16=torch.bfloat16)[
         distributed_args.model_dtype

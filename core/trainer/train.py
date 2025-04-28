@@ -74,8 +74,6 @@ from core.trainer.transformer import (
 )
 from core.trainer.probe import AutoProbeD
 from core.trainer.stool import StoolArgs, launch_job
-from core.models.GI_01.main.model import ConstrueModel
-from core.configurations.base import BaseConfiguration
 
 
 import wandb
@@ -159,16 +157,10 @@ def validate_train_args(args: TrainArgs, output_size: int):
     if (
         args.distributed.dp_replicate
         * args.distributed.dp_shard
-        * args.distributed.tp_size
         != get_world_size()
     ):
         assert get_world_size() % args.distributed.dp_shard == 0
         args.distributed.dp_replicate = get_world_size() // args.distributed.dp_shard
-
-        assert args.distributed.dp_replicate % args.distributed.tp_size == 0
-        args.distributed.dp_replicate = (
-            args.distributed.dp_replicate // args.distributed.tp_size
-        )
 
         logger.warning(
             f"Setting Data Parallel size to {args.distributed.dp_replicate * args.distributed.dp_shard}"
@@ -176,7 +168,6 @@ def validate_train_args(args: TrainArgs, output_size: int):
         assert (
             args.distributed.dp_replicate
             * args.distributed.dp_shard
-            * args.distributed.tp_size
             == get_world_size()
         )
 
@@ -188,10 +179,6 @@ def validate_train_args(args: TrainArgs, output_size: int):
 
     args.model.max_seqlen = args.data.seq_len
 
-    if args.distributed.tp_size == 1:
-        logger.warning(
-            "Tensor parallelism has not been tested for a while, use at your own risk"
-        )
 
     assert (
         args.probe_freq != args.profiling.mem_steps
@@ -203,9 +190,6 @@ def validate_train_args(args: TrainArgs, output_size: int):
         args.logging.wandb.name = args.name
 
     if args.probe_freq is not None:
-        assert (
-            args.distributed.tp_size == 1
-        ), "Probing not supported with tensor parallelism"
         assert (
             args.distributed.selective_activation_checkpointing is False
         ), "Probing not supported with selective activation checkpointing"
@@ -269,16 +253,7 @@ def train(args: TrainArgs):
 
         # Initializing Model in meta device allows us to initialize models much bigger than 1 gpu's memory
         with torch.device("meta"):
-            # model = LMTransformer(args.model)
-            config = BaseConfiguration(model_name="small_lm", num_layers=2, hidden_dim=128, intermediate_dim=512,
-                               max_positions=256, vocabulary_size=64000, num_heads=2, attention_dropout=0.05,
-                               batch_size=8, weight_decay=0.01,
-                               learning_rate=5e-4,
-                               tokenizer_path="/workspace/vipin_g6/personal/pretraining/english_tokenizer/english_tokenizer.model",
-                               dataset_batch_size=16, dataset_shuffle=True, num_epochs=2, eval_frequency=1,
-                               eval_iter=10,
-                               model_max_sequence=256)
-            model = ConstrueModel(config)
+            model = LMTransformer(args.model)
         logger.info(f"Model is built !")
 
         model_param_count = get_num_params(model)
@@ -286,10 +261,8 @@ def train(args: TrainArgs):
         model = parallelize_model(
             model,
             world_mesh,
-            args.model,
             args.distributed,
             fsdp_grouping_plan=build_fsdp_grouping_plan(args.model),
-            tp_parallelize=None,
             no_recompute_ops=None,
         )
 

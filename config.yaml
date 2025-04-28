@@ -59,7 +59,6 @@ model:
 distributed:
   dp_shard: 2
   dp_replicate: 1
-  tp_size: 1
   selective_activation_checkpointing: false
   compile: true
   fsdp_type: full_shard
@@ -67,6 +66,7 @@ distributed:
   float8_recipe: null
   float8_filter: layers\.[0-9]+\.
   matmul_allow_tf32: false
+  allow_bf16_reduced_precision_reduction: true
   detect_anomaly: false
   compile_cache_size_limit: 8
   spawn_method: forkserver

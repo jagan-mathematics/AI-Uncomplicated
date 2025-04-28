@@ -7,7 +7,7 @@
 import torch
 import unittest
 
-from core.layers.layer_norm import LayerNorm
+from core.layers.norms import LayerNorm
 
 
 class TestLayerNorm(unittest.TestCase):
@@ -42,7 +42,7 @@ class TestLayerNorm(unittest.TestCase):
         # print(f"output tensor is {output_tensor[0]}")
         mean = input_tensor[0].mean()
         variance = input_tensor[0].var(unbiased=False)
-        
+
         normalized_input = (
                                    input_tensor[0] - mean
                            ) / torch.sqrt(variance + self.layer_norm.epsilon)

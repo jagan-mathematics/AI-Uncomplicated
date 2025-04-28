@@ -22,7 +22,7 @@ from torch.distributed.checkpoint.state_dict import (
     set_state_dict
 )
 
-
+from torch.distributed.checkpoint.format_utils import dcp_to_torch_save
 
 import logging
 
@@ -57,10 +57,31 @@ RE_DIGIT = r"\d+"
 #     init_ckpt_path: Optional[str] = None
 #     continue_training_from_init: bool = False
 
+def consolidate_checkpoints(ckpt_dir: str):
+    """
+    Consolidates all FSDP checkpoints in a directory to a single file
+    Consolidate checkpoint is saved in a subdirectory of ckpt_dir
+
+    Parameters:
+        ckpt_dir: str - path to the directory containing the checkpoints
+
+    Returns the path to the consolidated checkpoint
+    """
+    consolidate_path = Path(ckpt_dir) / CONSOLIDATE_FOLDER
+    if not (consolidate_path / CONSOLIDATE_NAME).exists():
+        consolidate_path.mkdir(exist_ok=True)
+        logger.info(f"Consolidating to: {str(consolidate_path)}")
+        dcp_to_torch_save(ckpt_dir, str(consolidate_path / CONSOLIDATE_NAME))
+        (consolidate_path / CONFIG_NAME).write_text(
+            (Path(ckpt_dir) / CONFIG_NAME).read_text()
+        )
+        logger.info("Consolidated !")
+    return consolidate_path
+
 
 @dataclass
 class SaveEvery:
-    every: int = 1000
+    step: int = 1000
     limit: int = 0
 
 
@@ -176,19 +197,16 @@ class CheckpointManager:
         return folder
 
 
-    def _get_dp_tp_mesh(
+    def _get_dp_mesh(
         self, device_mesh: Optional[DeviceMesh] = None
     ) -> Tuple[int, int]:
         dp_rank = 0
-        tp_rank = 0
         if device_mesh is not None:
             if "dp_replicate" in device_mesh.mesh_dim_names:
                 dp_rank = device_mesh.get_local_rank("dp_replicate")
                 if "dp_shard" in device_mesh.mesh_dim_names:
                     dp_rank = dp_rank * device_mesh["dp_shard"].size() + device_mesh.get_local_rank("dp_shard")
-            if "tp" in device_mesh.mesh_dim_names:
-                tp_rank = device_mesh.get_local_rank("tp")
-        return dp_rank, tp_rank
+        return dp_rank
 
 
     @torch.no_grad()
@@ -234,15 +252,15 @@ class CheckpointManager:
                 )
 
         # Add json dump here
-        dp_rank, tp_rank = self._get_dp_tp_mesh(device_mesh)
-        if tp_rank == 0:
-            train_state_name = TRAIN_STATE_NAME.format(dp_rank)
-            logger.info(
-                f"Saving train state to: {str(curr_save_dir / train_state_name)}"
-            )
-            with open(curr_save_dir / train_state_name, "w") as f:
-                json.dump(train_state.state_dict(), f)
-            logger.info("Train state saved !")
+        dp_rank = self._get_dp_mesh(device_mesh)
+
+        train_state_name = TRAIN_STATE_NAME.format(dp_rank)
+        logger.info(
+            f"Saving train state to: {str(curr_save_dir / train_state_name)}"
+        )
+        with open(curr_save_dir / train_state_name, "w") as f:
+            json.dump(train_state.state_dict(), f)
+        logger.info("Train state saved !")
 
         self.existing_saves.append(curr_save_dir)
 
@@ -271,7 +289,7 @@ class CheckpointManager:
         device_mesh: DeviceMesh,
         path: Optional[Path] = None,
     ):
-        dp_rank, tp_rank = self._get_dp_tp_mesh(device_mesh)
+        dp_rank = self._get_dp_mesh(device_mesh)
         # Loading tries to load the provided path, if not available the last saved step and finally from the init path
         path = path or self.get_last_step_path(dp_rank=dp_rank)
         # If none of those are available don't do anything

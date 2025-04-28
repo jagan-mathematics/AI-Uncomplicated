@@ -1,6 +1,9 @@
 from typing import Optional, Tuple
 import torch
 from torch import Tensor
+from xformers.ops import fmha
+from torch.nn.attention.flex_attention import create_block_mask, BlockMask
+
 
 
 def create_causal_mask(
@@ -37,3 +40,21 @@ def create_causal_mask(
         mask_value = torch.finfo(dtype).min
         causal_mask = causal_mask.masked_fill(attention_mask == 0, mask_value)
     return causal_mask
+
+
+
+def causal_mask(b, h, q_idx, kv_idx):
+    return q_idx >= kv_idx
+
+
+def create_multi_type_causal_mask(seqlen, attn_impl):
+    if attn_impl == "xformers":
+        return fmha.attn_bias.LowerTriangularMask()
+    elif attn_impl == "sdpa":
+        return "causal"
+    elif attn_impl == "flex_attention":
+        return create_block_mask(causal_mask, None, None, seqlen, seqlen)
+    else:
+        raise NotImplementedError(
+            f"Attention {attn_impl} not implemented"
+        )
