@@ -69,6 +69,19 @@ from core.trainer.utils import get_initializer, initialize_model
 logger = logging.getLogger()
 
 
+def attention_flops_per_token(n_layers, seq_len, dim, causal):
+    # Formula from https://github.com/Dao-AILab/flash-attention/blob/main/benchmarks/benchmark_flash_attention.py#L27-L30
+    return 3.5 * (4 * n_layers * seq_len * dim // (2 if causal else 1))
+
+
+def get_num_flop_per_token(
+    num_non_embed_params: int, n_layers: int, dim: int, seq_len: int
+) -> int:
+    return 6 * num_non_embed_params + attention_flops_per_token(
+        n_layers, seq_len, dim, True
+    )
+
+
 @dataclass
 class TrainArgs:
     name: str = "lingua_zoho"
@@ -468,7 +481,7 @@ def train(args):
                 acc_freq=args.logging.acc_freq,
             ):
                 time_delta = timer() - time_last_log
-                wps = nwords_since_last_log / (time_delta * args.distributed.tp_size)
+                wps = nwords_since_last_log / time_delta
 
                 gpu_mem_stats = gpu_memory_monitor.get_peak_stats()
 
@@ -484,9 +497,9 @@ def train(args):
                 # Use xformer's analyze profile trace to get actual measurement
                 FLOPS = (
                     get_num_flop_per_token(
-                        model_param_count - args.model.vocab_size * args.model.dim,
-                        args.model.n_layers,
-                        args.model.dim,
+                        model_param_count - args.model.vocab_size * args.model.hidden_dim,
+                        args.model.num_layers,
+                        args.model.hidden_dim,
                         args.data.seq_len,
                     )
                     * wps

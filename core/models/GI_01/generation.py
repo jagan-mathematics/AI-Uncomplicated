@@ -1,5 +1,7 @@
+from dataclasses import dataclass, field
 from pathlib import Path
 import time
+from typing import List, Optional
 from omegaconf import OmegaConf
 from torch import nn
 from core.layers.attention import AttentionBlock, MultiTypeAttentionBlock

@@ -45,7 +45,7 @@ class LMHarnessArgs:
     apply_chat_template: Union[bool, str] = False
     fewshot_as_multiturn: bool = False
     gen_kwargs: Optional[str] = None
-    verbosity: str = "INFO"
+    verbostiy: str = "INFO"
     predict_only: bool = False
     random_seed: int = 0
     numpy_random_seed: int = 1234
