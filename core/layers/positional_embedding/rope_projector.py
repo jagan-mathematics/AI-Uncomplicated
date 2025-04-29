@@ -68,6 +68,8 @@ class RopePositionEmbedding(nn.Module):
         if self.frequency_cis.device != device_type:
             logger.info("Changing frequency_cis device to match input tensor")
             self.frequency_cis = self.frequency_cis.to(device_type)
+        else:
+            logger.info("Loaded properly")
 
         if token_idx is not None:
             return self.frequency_cis[token_idx]

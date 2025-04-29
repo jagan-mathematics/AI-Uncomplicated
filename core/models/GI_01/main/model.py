@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import torch
 from torch.nn import functional as F
@@ -12,13 +12,32 @@ from core.utils.masks import create_causal_mask, create_multi_type_causal_mask
 
 from torch import nn
 
+class InitStdFactor(Enum):
+    DISABLED = "disabled"  # Init std is divided by 1.0
+    GLOBAL_DEPTH = "global_depth"  # Init std is divided by sqrt(2*n_layers)
+    CURRENT_DEPTH = "current_depth"  # Init std is divided by sqrt(2*depth)
+    DIM_RATIO = "dim_ratio"  # Init std is divided by model_dim/4096
+
+
+class TiedLinear(nn.Module):
+    def __init__(self, tied_module: nn.Module) -> None:
+        super().__init__()
+        self.tied_module = tied_module
+        if not hasattr(tied_module, "weight"):
+            raise AttributeError(
+                "Provided module does not have attribute 'weight'. Please check your tied_module."
+            )
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        return F.linear(x, self.tied_module.weight)
 
 @dataclass
 class GI01ModelArgs(BaseConfiguration):
-    embedding_init: str = "xavier"
-    init_type: str = "xavier"
-    activation: str = "gelu"
-
+    weight_tying: bool = False
+    ffn_dim_multiplier: Optional[float] = None
+    multiple_of: int = 256
+    init_base_std: Optional[float] = None
+    init_std_factor: str = "disabled"
 
 
 def cross_entropy(pred, target, **kwargs):
@@ -35,6 +54,9 @@ class ConstrueModel(nn.Module):
         super().__init__()
 
         self.config = config
+
+        self.init_base_std = config.init_base_std
+        self.init_std_factor = InitStdFactor(config.init_std_factor)
 
         self.token_embeddings = nn.Embedding(
             num_embeddings=config.vocab_size,
@@ -60,7 +82,57 @@ class ConstrueModel(nn.Module):
             model_dimension=config.hidden_dim
         )
 
-    def forward(self, input_tensor, attn_mask=None, token_idx=None, attn_impl="sdpa", output_attentions=False, output_hidden_states=False):
+
+        if config.weight_tying:
+            self.# The `llm_head` in the `ConstrueModel` class is a linear layer that is used for
+            # tying weights in the model. It is initialized as a `TiedLinear` module with the
+            # tied module being the token embeddings (`tok_embeddings`). This allows the weights
+            # of the linear layer to be tied to the weights of the token embeddings, which can
+            # help reduce the number of parameters in the model and improve training efficiency.
+            llm_head = TiedLinear(self.tok_embeddings)
+        else:
+            self.llm_head = nn.Linear(
+                config.hidden_dim,
+                config.vocab_size,
+                bias=False,
+            )
+
+
+
+    def reset_parameters(self, init_std=None):
+        self.reset_parameters()
+        for depth, layer in enumerate(self.decoder_layers):
+            factor = {
+                InitStdFactor.CURRENT_DEPTH: (2 * (depth + 1)) ** 0.5,
+                InitStdFactor.GLOBAL_DEPTH: (2 * (len(self.decoder_layers) + 1)) ** 0.5,
+                InitStdFactor.DIM_RATIO: self.dim / 4096,
+                InitStdFactor.DISABLED: 1.0,
+            }[self.init_std_factor]
+
+            layer.init_weights(self.init_base_std, factor)
+
+        init_std = init_std or (self.dim ** (-0.5))
+        self.final_layer_norm.reset_parameters()
+
+        nn.init.trunc_normal_(
+            self.token_embeddings.weight,
+            mean=0.0,
+            std=init_std,
+            a=-3 * init_std,
+            b=3 * init_std,
+        )
+
+        if not self.weight_tying:
+            nn.init.trunc_normal_(
+                self.lm_head.weight,
+                mean=0.0,
+                std=init_std,
+                a=-3 * init_std,
+                b=3 * init_std,
+            )
+
+
+    def forward(self, input_tensor, attn_mask=None, target=None, token_idx=None, attn_impl="sdpa", output_attentions=False, output_hidden_states=False):
 
         bsz, seqlen = input_tensor.shape
 
@@ -103,44 +175,27 @@ class ConstrueModel(nn.Module):
 
         hidden_states = self.final_layer_norm(hidden_states)
 
-        return hidden_states, (output_attentions_weights if output_attentions else None), (
-            layers_hidden_states if output_hidden_states else None)
-
-
-class ConstrueAutoRegressiveModel(nn.Module):
-    def __init__(self, config: BaseConfiguration):
-        super().__init__()
-        self.config = config
-        self.model = ConstrueModel(config)
-        self.lm_head = nn.Linear(
-            in_features=config.hidden_dim,
-            out_features=config.vocab_size,
-            bias=False
-        )
-
-    def forward(self, input_ids, attention_mask=None, target=None, token_idx=None, attn_impl="sdpa", output_attentions=False, output_hidden_states=False):
-        last_hidden_state, output_attention_weights, hidden_states = self.model(input_ids, attention_mask,
-                                                                                token_idx=token_idx,
-                                                                                attn_impl=attn_impl)
-        logits = self.lm_head(last_hidden_state)
+        logits = self.lm_head(hidden_states)
         output = {
             "logits": logits,
-            "last_hidden_state": last_hidden_state,
-            "attention_map": output_attention_weights if output_attentions else None,
+            "last_hidden_state": hidden_states,
+            "attention_map": output_attentions_weights if output_attentions else None,
             "hidden_states": hidden_states if output_hidden_states else None
         }
         if target is not None:
             output["loss"] = cross_entropy(logits, target)
         return output
 
+
+
 def build_fsdp_grouping_plan(model_args: GI01ModelArgs) -> List[Tuple[str, bool]]:
     group_plan: Tuple[int, bool] = []
 
     # Grouping and output seperately
-    group_plan.append(("model.token_embeddings", False))
+    group_plan.append(("token_embeddings", False))
 
     # Grouping by layers
     for i in range(model_args.num_layers):
-        group_plan.append((f"model.decoder_layers.{i}", False))
+        group_plan.append((f"decoder_layers.{i}", False))
 
     return group_plan

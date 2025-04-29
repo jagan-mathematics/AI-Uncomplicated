@@ -182,6 +182,25 @@ class AttentionBlock(nn.Module):
 
         return attn_output, (attn_weights if output_attentions else None)
 
+    def reset_parameters(self, init_std=None, factor=1.0):
+        init_std = init_std or (self.dim ** (-0.5))
+
+        nn.init.trunc_normal_(
+            self.qkv_projection.weight,
+            mean=0.0,
+            std=init_std,
+            a=-3 * init_std,
+            b=3 * init_std,
+        )
+
+        nn.init.trunc_normal_(
+            self.output_projection.weight,
+            mean=0.0,
+            std=init_std / factor,
+            a=-3 * init_std,
+            b=3 * init_std,
+        )
+
 
 
 
@@ -290,4 +309,21 @@ class MultiTypeAttentionBlock(nn.Module):
         attn_output = self.output_projection(output.reshape(output_shape))
         return attn_output, None
 
+    def reset_parameters(self, init_std=None, factor=1.0):
+        init_std = init_std or (self.dim ** (-0.5))
 
+        nn.init.trunc_normal_(
+            self.qkv_projection.weight,
+            mean=0.0,
+            std=init_std,
+            a=-3 * init_std,
+            b=3 * init_std,
+        )
+
+        nn.init.trunc_normal_(
+            self.output_projection.weight,
+            mean=0.0,
+            std=init_std / factor,
+            a=-3 * init_std,
+            b=3 * init_std,
+        )

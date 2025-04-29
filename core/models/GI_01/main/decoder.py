@@ -61,3 +61,10 @@ class ConstrueDecoderLayer(nn.Module):
 
         return hidden_state, self_attn_weights
 
+
+    def init_weights(self, init_std=None, factor=1.0):
+        self.self_attn.reset_parameters(init_std, factor)
+        self.input_norm.reset_parameters()
+
+        self.mlp.reset_parameters(init_std, factor)
+        self.post_attention_norm.reset_parameters()

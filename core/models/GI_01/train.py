@@ -58,7 +58,7 @@ from core.trainer.dataloader import build_tokenizer
 
 from core.trainer.probe import AutoProbeD
 from core.trainer.stool import StoolArgs, launch_job
-from core.models.GI_01.main.model import ConstrueModel, GI01ModelArgs, ConstrueAutoRegressiveModel, build_fsdp_grouping_plan
+from core.models.GI_01.main.model import ConstrueModel, GI01ModelArgs, build_fsdp_grouping_plan
 from core.configurations.base import BaseConfiguration
 
 
@@ -268,7 +268,7 @@ def train(args):
         logger.info(f"Building model")
 
         with torch.device("meta"):
-            model = ConstrueAutoRegressiveModel(args.model)
+            model = ConstrueModel(args.model)
         logger.info(f"Model is built !")
 
         model_param_count = get_num_params(model)
@@ -296,10 +296,7 @@ def train(args):
         else:
             with torch.random.fork_rng(devices=[torch.cuda.current_device()]):
                 torch.manual_seed(args.model.seed)
-                # model.init_weights()
-                initialize_model(model, init_type=args.model.init_type,
-                                              activation=args.model.activation,
-                                              embedding_init=args.model.embedding_init)
+                model.init_weights()
 
         if get_is_master():
             check_model_value_range(model, range=10.0, std=1.0)

@@ -10,8 +10,8 @@ data:
   root_dir: /workspace/AI-Uncomplicated/artifact/pretraining_data/
   sources:
     TigerResearch: 100.0
-  batch_size: 32
-  seq_len: 1024
+  batch_size: 2
+  seq_len: 32
   n_views: 2
   seed: 42
   add_bos: true
@@ -43,24 +43,26 @@ optim:
 
 model:
   name: null
-  num_layers: 16
+  num_layers: 1
   padding_id: 0
-  hidden_dim: 1024
-  intermediate_dim: 3072
-  max_positions: 2048
+  hidden_dim: 64
+  intermediate_dim: 128
+  max_positions: 256
   vocab_size: -1
   layer_norm_eps: 1.0e-05
-  max_seq_len: 2048
-  num_heads: 16
+  max_seq_len: 256
+  num_heads: 2
   attention_dropout: 0.0
   head_dim: null
   use_rope: true
   rope_base: 10000.0
   output_last_hidden_state: false
   seed: 42
-  embedding_init: xavier
-  init_type: xavier
-  activation: gelu
+  weight_tying: false
+  ffn_dim_multiplier: null
+  multiple_of: 256
+  init_base_std: null
+  init_std_factor: "disabled"
 
 
 distributed:

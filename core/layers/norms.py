@@ -59,5 +59,5 @@ class RMSNorm(nn.Module):
         output = self._norm(x.float())
         return (output * self.weight.float()).type_as(x)
 
-    def init_weights(self):
+    def reset_parameters(self):
         torch.nn.init.ones_(self.weight)  # type: ignore
