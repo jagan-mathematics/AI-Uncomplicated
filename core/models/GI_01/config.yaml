@@ -31,7 +31,7 @@ optim:
   beta1: 0.9
   beta2: 0.95
   clip: 10.0
-  scheduler: cosine
+  scheduler: wsd
   warmup: 2000
   lr_min_ratio: 1.0e-06
   cycle_length: 1.0
@@ -39,6 +39,7 @@ optim:
   annealing_step: 1000
   decay_fraction: 0.1
   exp_factor: 0.5
+  decay_type: cosine
 
 model:
   name: null

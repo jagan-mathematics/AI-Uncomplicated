@@ -1,4 +1,4 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 
 from dataclasses import dataclass
 from functools import partial
@@ -20,13 +20,14 @@ class OptimArgs:
     beta2: float = 0.95
     clip: float = 1.0
 
-    scheduler: str = "cosine"
+    scheduler: str = "wsd"
     warmup: int = 2000
     lr_min_ratio: float = 0.1
     cycle_length: float = 1.0
     cosine_theta: float = 1.0
     annealing_step: int = 1000
     decay_fraction: float = 0.1
+    decay_type: str = "cosine"
 
     exp_factor: float = 0.5
 
@@ -77,6 +78,8 @@ def lr_wsd(
     decay_fraction: float,
     cycle_length: float,
     min_ratio: float,
+    theta: float,
+    decay_type: str = "inverse_linear"
 ) -> float:
     """
     UNDERSTANDING WARMUP-STABLE-DECAY LEARNING RATES: A RIVER VALLEY LOSS LANDSCAPE PERSPECTIVE
@@ -98,10 +101,18 @@ def lr_wsd(
         # slope = -(1.0 - min_ratio) / decay_length
         # intercept = min_ratio + ((1.0 - min_ratio) * curr_n_steps) / decay_length
         # lr = slope * step + intercept
-
         step_in_decay = step - (curr_n_steps - decay_length)
         progress = step_in_decay / decay_length
-        lr = 1 / (progress * (1/min_ratio) + (1 - progress))
+        if decay_type == "inverse_linear":
+            lr = 1 / (progress * (1/min_ratio) + (1 - progress))
+        elif decay_type == "cosine":
+            lr = lr_cosine(step_in_decay, 0.0, decay_length, cycle_length, theta, min_ratio)
+            # sign = ((step_in_decay // (decay_length * cycle_length)) % 2) * -2 + 1
+            # lr = min_ratio + 0.5 * (1 - min_ratio) * (
+            #         sign * math.cos(math.pi * progress ** theta / cycle_length) + 1
+            # )
+        else:
+            raise NotImplementedError(f"wds decay type not implemented for `{decay_type}`")
     else:
         lr = min_ratio
 
@@ -140,6 +151,8 @@ def build_lr_fn(args: OptimArgs, n_steps: int):
             decay_fraction=args.decay_fraction,
             cycle_length=args.cycle_length,
             min_ratio=args.lr_min_ratio,
+            theta=args.cosine_theta,
+            decay_type=args.decay_type,
         )
     else:
         raise NotImplementedError(f"Unknown scheduler: {args.scheduler}")

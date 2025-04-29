@@ -17,7 +17,7 @@ from torch.nn.attention.flex_attention import (
 
 from core.models.GI_01.main.model import ConstrueAutoRegressiveModel, GI01ModelArgs
 from core.trainer.args import dataclass_from_dict
-from core.trainer.checkpointer import CONSOLIDATE_NAME
+from core.trainer.checkpointer import CONSOLIDATE_NAME, consolidate_checkpoints
 from core.trainer.dataloader import build_tokenizer
 
 
@@ -488,7 +488,12 @@ def load_consolidated_model_and_tokenizer(
     model_args = dataclass_from_dict(model_args_cls, config.model, strict=False)
     tokenizer = build_tokenizer(config.data.tokenizer.name, config.data.tokenizer.path)
     model = model_cls(model_args)
-    st_dict = torch.load(ckpt_path / CONSOLIDATE_NAME, weights_only=True)
+
+    consolidate_path = ckpt_path / CONSOLIDATE_NAME
+    if not consolidate_path.exists():
+        consolidate_path = consolidate_checkpoints(ckpt_path)
+
+    st_dict = torch.load(consolidate_path / CONSOLIDATE_NAME, weights_only=True)
     model.load_state_dict(st_dict["model"])
     model = model.cuda().eval()
     for param in model.parameters():
@@ -522,7 +527,7 @@ def main():
     end_time = time.time()
 
     # Calculate tokens per second
-    total_tokens = sum(len(tokenizer.encode(gen, False, False)) for gen in generation)
+    total_tokens = sum(len(tokenizer.encode(gen)) for gen in generation)
     tokens_per_second = total_tokens / (end_time - start_time)
 
     # Display the results
