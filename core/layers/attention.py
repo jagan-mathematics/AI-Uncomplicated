@@ -310,7 +310,7 @@ class MultiTypeAttentionBlock(nn.Module):
         return attn_output, None
 
     def reset_parameters(self, init_std=None, factor=1.0):
-        init_std = init_std or (self.dim ** (-0.5))
+        init_std = init_std or (self.hidden_dim ** (-0.5))
 
         nn.init.trunc_normal_(
             self.qkv_projection.weight,

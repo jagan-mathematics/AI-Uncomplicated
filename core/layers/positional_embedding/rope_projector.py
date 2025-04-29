@@ -77,7 +77,7 @@ class RopePositionEmbedding(nn.Module):
             return self.frequency_cis[0:sequence_length]
 
 
-    def init_weights(self):
+    def reset_parameters(self):
         frequency_cis = self._get_cache_rotatory_matrix(
             max_positions=self.max_positions,
             hidden_dim=self.hidden_dim,

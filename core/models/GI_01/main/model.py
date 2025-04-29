@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import List, Optional, Tuple
 
 import torch
@@ -54,7 +55,7 @@ class ConstrueModel(nn.Module):
         super().__init__()
 
         self.config = config
-
+        self.hidden_dim = config.hidden_dim
         self.init_base_std = config.init_base_std
         self.init_std_factor = InitStdFactor(config.init_std_factor)
 
@@ -63,7 +64,7 @@ class ConstrueModel(nn.Module):
             embedding_dim=config.hidden_dim,
             padding_idx=config.padding_id
         )
-        self.rope_position_projection = RopePositionEmbedding(
+        self.rope_embeddings = RopePositionEmbedding(
                 hidden_dim=config.head_dim,
                 max_positions=config.max_positions,
                 base=config.rope_base
@@ -82,14 +83,9 @@ class ConstrueModel(nn.Module):
             model_dimension=config.hidden_dim
         )
 
-
+        self.weight_tying = config.weight_tying
         if config.weight_tying:
-            self.# The `llm_head` in the `ConstrueModel` class is a linear layer that is used for
-            # tying weights in the model. It is initialized as a `TiedLinear` module with the
-            # tied module being the token embeddings (`tok_embeddings`). This allows the weights
-            # of the linear layer to be tied to the weights of the token embeddings, which can
-            # help reduce the number of parameters in the model and improve training efficiency.
-            llm_head = TiedLinear(self.tok_embeddings)
+            self.llm_head = TiedLinear(self.token_embeddings)
         else:
             self.llm_head = nn.Linear(
                 config.hidden_dim,
@@ -98,20 +94,15 @@ class ConstrueModel(nn.Module):
             )
 
 
+    def reset_parameters(self):
+        # Either use fixed base std or sqrt model dim
+        self.rope_embeddings.reset_parameters()
 
-    def reset_parameters(self, init_std=None):
+
+    def init_weights(self, init_std=None):
         self.reset_parameters()
-        for depth, layer in enumerate(self.decoder_layers):
-            factor = {
-                InitStdFactor.CURRENT_DEPTH: (2 * (depth + 1)) ** 0.5,
-                InitStdFactor.GLOBAL_DEPTH: (2 * (len(self.decoder_layers) + 1)) ** 0.5,
-                InitStdFactor.DIM_RATIO: self.dim / 4096,
-                InitStdFactor.DISABLED: 1.0,
-            }[self.init_std_factor]
 
-            layer.init_weights(self.init_base_std, factor)
-
-        init_std = init_std or (self.dim ** (-0.5))
+        init_std = init_std or (self.hidden_dim ** (-0.5))
         self.final_layer_norm.reset_parameters()
 
         nn.init.trunc_normal_(
@@ -124,7 +115,7 @@ class ConstrueModel(nn.Module):
 
         if not self.weight_tying:
             nn.init.trunc_normal_(
-                self.lm_head.weight,
+                self.llm_head.weight,
                 mean=0.0,
                 std=init_std,
                 a=-3 * init_std,
@@ -132,17 +123,30 @@ class ConstrueModel(nn.Module):
             )
 
 
-    def forward(self, input_tensor, attn_mask=None, target=None, token_idx=None, attn_impl="sdpa", output_attentions=False, output_hidden_states=False):
+        for depth, layer in enumerate(self.decoder_layers):
+            factor = {
+                InitStdFactor.CURRENT_DEPTH: (2 * (depth + 1)) ** 0.5,
+                InitStdFactor.GLOBAL_DEPTH: (2 * (len(self.decoder_layers) + 1)) ** 0.5,
+                InitStdFactor.DIM_RATIO: self.hidden_dim / 4096,
+                InitStdFactor.DISABLED: 1.0,
+            }[self.init_std_factor]
 
-        bsz, seqlen = input_tensor.shape
+            layer.init_weights(self.init_base_std, factor)
+
+
+
+
+    def forward(self, input_ids, attention_mask=None, target=None, token_idx=None, attn_impl="sdpa", output_attentions=False, output_hidden_states=False):
+
+        bsz, seqlen = input_ids.shape
 
         # if attn_mask is None:
         #     attn_mask = torch.ones_like(input_tensor)
 
-        hidden_states = self.token_embeddings(input_tensor)
+        hidden_states = self.token_embeddings(input_ids)
 
 
-        positional_frequency = self.rope_position_projection(input_tensor=input_tensor, token_idx=token_idx)
+        positional_frequency = self.rope_embeddings(input_tensor=input_ids, token_idx=token_idx)
 
         # causal_mask = create_causal_mask(
         #     attention_mask=attn_mask,
@@ -152,8 +156,8 @@ class ConstrueModel(nn.Module):
         # )
 
         causal_mask = (
-            attn_mask
-            if attn_mask is not None
+            attention_mask
+            if attention_mask is not None
             else create_multi_type_causal_mask(seqlen, attn_impl)
         )
 
@@ -175,7 +179,7 @@ class ConstrueModel(nn.Module):
 
         hidden_states = self.final_layer_norm(hidden_states)
 
-        logits = self.lm_head(hidden_states)
+        logits = self.llm_head(hidden_states)
         output = {
             "logits": logits,
             "last_hidden_state": hidden_states,
@@ -198,4 +202,5 @@ def build_fsdp_grouping_plan(model_args: GI01ModelArgs) -> List[Tuple[str, bool]
     for i in range(model_args.num_layers):
         group_plan.append((f"decoder_layers.{i}", False))
 
+    group_plan.append((f"llm_head", False))
     return group_plan
