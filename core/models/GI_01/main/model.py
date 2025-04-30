@@ -146,7 +146,7 @@ class ConstrueModel(nn.Module):
         hidden_states = self.token_embeddings(input_ids)
 
 
-        positional_frequency = self.rope_embeddings(input_tensor=input_ids, token_idx=token_idx)
+        positional_frequency = self.rope_embeddings(seqlen=seqlen, token_idx=token_idx)
 
         # causal_mask = create_causal_mask(
         #     attention_mask=attn_mask,

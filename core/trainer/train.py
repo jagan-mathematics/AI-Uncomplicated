@@ -460,7 +460,7 @@ def train(args: TrainArgs):
                 acc_freq=args.logging.acc_freq,
             ):
                 time_delta = timer() - time_last_log
-                wps = nwords_since_last_log / (time_delta * args.distributed.tp_size)
+                wps = nwords_since_last_log / (time_delta)
 
                 gpu_mem_stats = gpu_memory_monitor.get_peak_stats()
 

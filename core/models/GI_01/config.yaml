@@ -9,7 +9,7 @@ steps: 3000
 data:
   root_dir: /workspace/AI-Uncomplicated/artifact/pretraining_data/
   sources:
-    TigerResearch: 100.0
+    TigerResearch: 1.0
   batch_size: 2
   seq_len: 32
   n_views: 2
