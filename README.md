@@ -72,4 +72,7 @@ In Transformer models, position encoding is crucial for providing a sense of wor
 ---
 **References**
 [Attention is All You Need](https://arxiv.org/abs/1706.03762)
+
 [Neural Machine Translation with a Transformer and Keras](https://www.tensorflow.org/text/tutorials/transformer)
+
+[Lingua Repo Meta](https://github.com/facebookresearch/lingua/tree/main) [Training scripts and modified data loader have been used from this repo]
