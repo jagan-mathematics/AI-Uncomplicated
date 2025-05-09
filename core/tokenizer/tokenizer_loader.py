@@ -1,8 +1,18 @@
+from typing import Optional
+
+from dataclasses import dataclass
+
 import regex as re
 import sentencepiece as spm
 import torch
 import json
 import os
+
+
+@dataclass
+class TokenizerArgs:
+    name: str = "bytes"
+    path: Optional[str] = None
 
 class SPMTokenizer:
     def __init__(self, tokenizer_path, bos_peice="<s>", eos_peice="</s>", padding_peice="<pad>"):

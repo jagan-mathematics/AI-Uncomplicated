@@ -1,0 +1,52 @@
+# This is where Meta Lingua will store anything related to the experiment.
+dump_dir: /workspace/AI-Uncomplicated/
+name: "debug"
+steps: 3000
+
+seed: 12
+
+optim:
+    lr: 3e-4
+    warmup: 2000
+    lr_min_ratio: 0.000001
+    clip: 10.0
+
+distributed:
+    fsdp_type: full_shard
+    compile: true
+    dp_shard: 2
+    dp_replicate: 1
+    selective_activation_checkpointing: false
+
+model:
+    dim: 1024
+    n_layers: 16
+    n_heads: 16
+
+checkpoint:
+    path: /workspace/AI-Uncomplicated/
+
+profiling:
+    run: true
+    trace_folder: profiling
+
+logging:
+    freq: 1
+    wandb:
+        entity: vipinsaravana
+        project: Pretrain
+        name: lingua_model_base_run
+        dir: /workspace/AI-Uncomplicated/wandb/
+
+data:
+    root_dir: /workspace/AI-Uncomplicated/artifact/pretraining_data/
+    sources:
+      TigerResearch: 100.0
+    batch_size: 32
+    seq_len: 1024
+    load_async: true
+    fim_type: document
+    fim_rate: 0.1
+    tokenizer:
+        name: GI01-tokenizer-v0.1-en
+        path: /workspace/AI-Uncomplicated/artifact/tokenizer

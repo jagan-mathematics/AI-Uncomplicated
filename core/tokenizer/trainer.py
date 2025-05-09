@@ -29,8 +29,8 @@ class CustomTrainingTokenizer:
 
 
     def get_training_files(self, allowed_pattern) -> str:
+        path = os.path.join(self.data_path, allowed_pattern)
         try:
-            path = os.path.join(self.data_path, allowed_pattern)
             training_files = glob.glob(path)
 
             if not training_files:
@@ -40,7 +40,8 @@ class CustomTrainingTokenizer:
 
             return ",".join(training_files)
         except Exception as e:
-            print(f"Error collecting training files: {str(e)}")
+            print(f"Error collecting training files: {str(e)} :: path :: {path}")
+            raise ValueError(e)
 
     def get_yaml_list(self):
         """Read the yaml and get the user fefined symbol and control symbol"""

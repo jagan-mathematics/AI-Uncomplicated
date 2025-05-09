@@ -1,9 +1,11 @@
+from itertools import chain
 import torch
 import torch.nn as nn
 import numpy as np
 from typing import Dict, Any
 import matplotlib.pyplot as plt
-from core.trainer.utils import get_initializer
+from torch.distributed._tensor import DTensor
+
 
 torch.autograd.detect_anomaly(True)
 
@@ -96,7 +98,7 @@ def validate_activation_variance(model: nn.Module, input_size: tuple, n_samples:
 
     # Forward pass
     with torch.no_grad():
-        model(x)
+        model(x.to(model.device))
 
     # Compute variance of activations
     variances = {name: act.var().item() for name, act in activations.items()}
@@ -129,20 +131,55 @@ def validate_model_initial_states(model, config, input_size, n_samples):
         print(f"{layer}: {var:.6f}")
 
 
-from core.models.translator.construe import ConstrueAutoRegressiveModel
-from core.configurations.base import BaseConfiguration
 
-config = BaseConfiguration(model_name="small_lm", num_layers=6, hidden_dim=32, intermediate_dim=512,
-                               max_positions=256, vocabulary_size=64000, num_heads=8, attention_dropout=0.05,
-                               batch_size=8, weight_decay=0.01,
-                               learning_rate=5e-4,
-                               tokenizer_path="/workspace/vipin_g6/personal/pretraining/english_tokenizer/english_tokenizer.model",
-                               dataset_batch_size=16, dataset_shuffle=True, num_epochs=2, eval_frequency=1,
-                               eval_iter=10,
-                               model_max_sequence=256)
+@torch.no_grad()
+def check_model_value_range(
+    model: torch.nn.Module, range: float = 1e3, std: float = 1e3
+):
+    for name, param in chain(model.named_parameters(), model.named_buffers()):
+        if isinstance(param, DTensor):
+            param = param.to_local()
 
-model = ConstrueAutoRegressiveModel(config=config)
-initalizer = get_initializer(init_type="xavier", activation="gelu", embedding_init="xavier", embedding_padding_idx=config.padding_id)
+        if param.numel() == 0:
+            print(f"WARNING: Model parameter {name} is empty, probably because of FSDP sharding")
+            continue
 
-model.apply(initalizer)
-validate_model_initial_states(model, config, (10, ), n_samples=1000)
+        if torch.isnan(param).any() or torch.isinf(param).any():
+            print(f"WARNING: Model parameter {name} contains NaN or Inf")
+
+        param_range = param.max() - param.min()
+        param_std = param.std()
+
+        if param_range > range:
+            print(
+                f"WARNING: Model parameter {name} has a suspiciously large range ({param_range}): please check initialization and init_weights is defined and called"
+            )
+        if param_std > std:
+            print(
+                f"WARNING: Model parameter {name} has a suspiciously large standard deviation ({param_std}): please check initialization and init_weights is defined and called"
+            )
+        if (param == 0).all():
+            print(
+                f"WARNING: Model parameter {name} is all zeros: it might be because of a missing initialization"
+            )
+
+
+if __name__ == "__main__":
+    from core.trainer.utils import get_initializer
+    from core.models.GI_01.main.model import ConstrueAutoRegressiveModel
+    from core.configurations.base import BaseConfiguration
+
+    config = BaseConfiguration(model_name="small_lm", num_layers=6, hidden_dim=32, intermediate_dim=512,
+                                max_positions=256, vocabulary_size=64000, num_heads=8, attention_dropout=0.05,
+                                batch_size=8, weight_decay=0.01,
+                                learning_rate=5e-4,
+                                tokenizer_path="/workspace/vipin_g6/personal/pretraining/english_tokenizer/english_tokenizer.model",
+                                dataset_batch_size=16, dataset_shuffle=True, num_epochs=2, eval_frequency=1,
+                                eval_iter=10,
+                                model_max_sequence=256)
+
+    model = ConstrueAutoRegressiveModel(config=config)
+    initalizer = get_initializer(init_type="xavier", activation="gelu", embedding_init="xavier", embedding_padding_idx=config.padding_id)
+
+    model.apply(initalizer)
+    validate_model_initial_states(model, config, (10, ), n_samples=1000)

@@ -13,19 +13,19 @@ def download_dataset_from_huggingface(repo_id, revision, local_dir, allow_patter
         local_dir (str): destination folder to store files
         allow_patterns (str): file patter
         num_workers (str): number of workers to download files
-        
+
     Eg:
     If hf repo contains files in parquer format use pattern like
         `.parquet`
     If in sub-folder of parquet format
         `**.parquet`
-    
+
     Increase the num workers to enjoy the parallelism
     """
-    
+
     if allow_patterns is not None:
         allow_patterns = allow_patterns.split(",")
-        
+
     print(f"Downloading dataset from {repo_id}...")
     max_retries = 5
     retry_delay = 10  # seconds
@@ -48,23 +48,23 @@ def download_dataset_from_huggingface(repo_id, revision, local_dir, allow_patter
             else:
                 raise
     print(f"Dataset downloaded to {local_dir}")
-    
 
-    
-    
+
+
+
 def main(args, seed=42):
     # prepare workspace
     working_dir = args.working_dir
     if working_dir is None:
         working_dir = ""
-    
+
     working_dir = Path(working_dir)
     src_dir = working_dir / args.dataset
-    
+
     if not src_dir.exists():
         print(f"Creating source directory {src_dir}")
         src_dir.mkdir(parents=True)
-    
+
     # download dataset
     download_dataset_from_huggingface(
         repo_id=args.dataset,
@@ -74,7 +74,7 @@ def main(args, seed=42):
         revision=args.revision
     )
 
-        
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str)

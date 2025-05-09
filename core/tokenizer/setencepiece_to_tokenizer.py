@@ -25,7 +25,6 @@ def convert(model_path, special_tokens, save_path):
 
     model = spm.SentencePieceProcessor(model_file=model_path)
     unused_slots, peices = get_unused_peices(model)
-
     available_unused_slots = len(unused_slots) - 1
     if len(special_tokens) > available_unused_slots:
         raise ValueError(f"Avialble special token slots {available_unused_slots} but given {len(special_tokens)}")
